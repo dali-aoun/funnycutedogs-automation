@@ -1,0 +1,35 @@
+name: Render and upload video
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_slug:
+        description: "Folder name under videos/ to render and upload (e.g. zoomies)"
+        required: true
+
+jobs:
+  render-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Assemble video
+        run: python scripts/assemble_video.py "videos/${{ github.event.inputs.video_slug }}"
+
+      - name: Upload to YouTube
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/upload_to_youtube.py "videos/${{ github.event.inputs.video_slug }}"
