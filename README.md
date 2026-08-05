@@ -1,8 +1,9 @@
-# FunnyCuteDogs — Pipeline d'automatisation YouTube
+# FunnyCuteDogs — Pipeline d'automatisation YouTube + Instagram
 
-Automatise le montage et la publication des vidéos de la chaîne `@funnycutedogs`.
-Sourcing des clips = manuel (toi). Montage + upload = automatisé, gratuit
-(GitHub Actions + FFmpeg + YouTube Data API v3).
+Automatise le montage et la publication des vidéos de la chaîne `@funnycutedogs`
+sur YouTube et Instagram (Reels). Sourcing des clips = manuel (toi). Montage +
+publication = automatisé, gratuit (GitHub Actions + FFmpeg + YouTube Data API v3
++ Instagram Graph API + Cloudflare R2).
 
 ## Setup initial (une seule fois)
 
@@ -10,10 +11,16 @@ Sourcing des clips = manuel (toi). Montage + upload = automatisé, gratuit
 2. `python scripts/get_refresh_token.py` — ouvre ton navigateur, tu autorises
    l'accès à ta chaîne YouTube, le script affiche 3 valeurs à copier
 3. Va dans **Settings > Secrets and variables > Actions** du repo GitHub et
-   ajoute 3 secrets :
+   ajoute ces secrets :
    - `YOUTUBE_CLIENT_ID`
    - `YOUTUBE_CLIENT_SECRET`
    - `YOUTUBE_REFRESH_TOKEN`
+   - `IG_ACCESS_TOKEN` (token système Meta, ne expire pas)
+   - `IG_BUSINESS_ACCOUNT_ID` (compte Instagram Business lié à la Page)
+   - `FB_PAGE_ID`
+   - `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET`,
+     `R2_PUBLIC_URL` (hébergement temporaire public requis par l'API
+     Instagram, bucket R2 gratuit)
 
 ## Publier une nouvelle vidéo
 
@@ -28,8 +35,13 @@ Sourcing des clips = manuel (toi). Montage + upload = automatisé, gratuit
    **"Render and upload video"** → **Run workflow** → indique le nom du
    dossier (ex: `zoomies`) → Run
 
-Le workflow assemble la vidéo avec FFmpeg (clips + narration + watermark)
-et la publie automatiquement sur YouTube.
+Le workflow :
+1. assemble la vidéo horizontale avec FFmpeg (clips + narration + watermark)
+2. la publie sur YouTube
+3. découpe un Reel vertical 9:16 (60s, le "hook" pour driver vers la vidéo
+   complète)
+4. l'héberge temporairement sur Cloudflare R2, le publie sur Instagram, puis
+   supprime le fichier de R2
 
 ## Watermark de chaîne (optionnel)
 
