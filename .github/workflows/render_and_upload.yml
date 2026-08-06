@@ -6,6 +6,10 @@ on:
       video_slug:
         description: "Folder name under videos/ to render and upload (e.g. zoomies)"
         required: true
+      skip_youtube:
+        description: "Skip the YouTube upload step (use when retrying after YouTube already succeeded)"
+        required: false
+        default: "false"
 
 jobs:
   render-and-upload:
@@ -36,6 +40,7 @@ jobs:
         run: python scripts/assemble_video.py "videos/${{ github.event.inputs.video_slug }}"
 
       - name: Upload to YouTube
+        if: github.event.inputs.skip_youtube != 'true'
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
