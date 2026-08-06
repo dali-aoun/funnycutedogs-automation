@@ -52,7 +52,16 @@ def delete_from_r2(s3, bucket: str, object_key: str):
 
 
 def build_caption(meta: dict) -> str:
-    parts = [meta["title"], "", meta["description"], "", "#shorts #short"]
+    # Raw URLs aren't clickable in an Instagram caption, so drive to the bio
+    # link instead of reusing the YouTube description (which embeds one).
+    hashtags = " ".join(f"#{tag.replace(' ', '')}" for tag in meta.get("tags", [])[:8])
+    parts = [
+        meta["title"],
+        "",
+        "🐾 Full video + more on the link in bio!",
+        "",
+        f"{hashtags} #shorts #short".strip(),
+    ]
     return "\n".join(parts)
 
 
