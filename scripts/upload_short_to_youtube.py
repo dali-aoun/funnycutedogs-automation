@@ -1,8 +1,8 @@
 """
 Uploads videos/<slug>/reel.mp4 (the <60s vertical cut) to YouTube as a
-Short, using the metadata in videos/<slug>/meta.json. "#Shorts" is
-appended to the title, which is what makes YouTube reliably classify and
-shelf a sub-60s vertical upload as a Short.
+Short, using the metadata in videos/<slug>/meta.json. "#shorts" and
+"#short" are added to the title, description and tags — that's what makes
+YouTube reliably classify and shelf a sub-60s vertical upload as a Short.
 
 Usage:
     python scripts/upload_short_to_youtube.py videos/zoomies
@@ -13,6 +13,8 @@ from pathlib import Path
 
 from youtube_lib import upload_video
 
+SHORTS_HASHTAGS = "#shorts #short"
+
 
 def main(video_dir: str):
     video_dir = Path(video_dir)
@@ -22,12 +24,15 @@ def main(video_dir: str):
         raise SystemExit(f"Missing rendered short: {reel} (run assemble_reel.py first)")
     meta = json.loads((video_dir / "meta.json").read_text())
 
-    title = f"{meta['title']} #Shorts"
+    title = f"{meta['title']} {SHORTS_HASHTAGS}"
+    description = f"{meta['description']}\n\n{SHORTS_HASHTAGS}"
+    tags = meta.get("tags", []) + ["shorts", "short"]
+
     video_id = upload_video(
         reel,
         title,
-        meta["description"],
-        meta.get("tags", []),
+        description,
+        tags,
         meta.get("privacyStatus", "public"),
     )
     print(f"\nShort upload complete: https://youtube.com/shorts/{video_id}")

@@ -52,7 +52,7 @@ def delete_from_r2(s3, bucket: str, object_key: str):
 
 
 def build_caption(meta: dict) -> str:
-    parts = [meta["title"], "", meta["description"]]
+    parts = [meta["title"], "", meta["description"], "", "#shorts #short"]
     return "\n".join(parts)
 
 
