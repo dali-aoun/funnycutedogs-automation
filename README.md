@@ -37,15 +37,23 @@ manuelle. Entièrement gratuit (GitHub Actions + FFmpeg + Pexels API + Edge TTS
    **"Render and upload video"** → **Run workflow** → indique le nom du
    dossier (ex: `zoomies`) → Run
 
-Le workflow :
-1. télécharge des clips libres de droits depuis Pexels (mots-clés du `meta.json`)
+Le workflow produit systématiquement deux formats, tous les deux en HD minimum
+(canevas 1920x1080, clips sourcés en 720p+ uniquement, encodage CRF 18) :
+
+- **une vidéo longue** (`final.mp4`, garantie **> 60s** — le script échoue si
+  ce n'est pas le cas, il faut alors allonger le `script`) → publiée en vidéo
+  YouTube classique
+- **un Short** (`reel.mp4`, format vertical 9:16, coupé à **≤ 60s**) → publié
+  à la fois en **YouTube Shorts** et en **Instagram Reel**
+
+Étapes :
+1. télécharge des clips HD libres de droits depuis Pexels (mots-clés du `meta.json`)
 2. génère la narration à partir du `script` (voix neuronale gratuite Edge TTS)
-3. assemble la vidéo horizontale avec FFmpeg (clips + narration + watermark)
-4. la publie sur YouTube
-5. découpe un Reel vertical 9:16 (60s, le "hook" pour driver vers la vidéo
-   complète)
-6. l'héberge temporairement sur Cloudflare R2, le publie sur Instagram, puis
-   supprime le fichier de R2
+3. assemble la vidéo longue avec FFmpeg (clips normalisés en 1080p + narration + watermark)
+4. la publie sur YouTube (vidéo longue)
+5. découpe le Short vertical 9:16 à partir de la vidéo longue
+6. publie le Short sur YouTube (Shorts) et sur Instagram (Reel, via hébergement
+   temporaire Cloudflare R2, supprimé juste après publication)
 
 Apporter tes propres clips/narration reste possible : il suffit de déposer
 `clips/*.mp4` et `narration.mp3` toi-même, le pipeline ne les régénère que

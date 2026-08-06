@@ -47,8 +47,16 @@ jobs:
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
         run: python scripts/upload_to_youtube.py "videos/${{ inputs.video_slug }}"
 
-      - name: Assemble Instagram Reel
+      - name: Assemble Instagram Reel / YouTube Short
         run: python scripts/assemble_reel.py "videos/${{ inputs.video_slug }}"
+
+      - name: Upload Short to YouTube
+        if: inputs.skip_youtube != 'true'
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/upload_short_to_youtube.py "videos/${{ inputs.video_slug }}"
 
       - name: Publish to Instagram
         env:

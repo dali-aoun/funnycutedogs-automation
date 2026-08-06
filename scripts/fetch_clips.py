@@ -1,6 +1,7 @@
 """
 Sources royalty-free dog video clips from the Pexels API into
-videos/<slug>/clips/, based on the "keywords" list in meta.json.
+videos/<slug>/clips/, based on the "keywords" list in meta.json. Only
+downloads clips at 720p (HD) or above — sub-HD files are skipped entirely.
 
 This replaces manual clip curation: Pexels footage is licensed for free
 commercial reuse with no attribution required, so this also removes the
@@ -21,18 +22,23 @@ import requests
 PEXELS_SEARCH_URL = "https://api.pexels.com/videos/search"
 MIN_DURATION_SECONDS = 3
 MAX_DURATION_SECONDS = 25
-PREFERRED_MIN_WIDTH = 1280
+MIN_HD_WIDTH = 1280
+MAX_PREFERRED_WIDTH = 1920
 
 
 def pick_video_file(video: dict):
-    files = video.get("video_files", [])
-    candidates = [f for f in files if f.get("file_type") == "video/mp4" and (f.get("width") or 0) >= PREFERRED_MIN_WIDTH]
-    if not candidates:
-        candidates = [f for f in files if f.get("file_type") == "video/mp4"]
-    if not candidates:
+    hd_files = [
+        f for f in video.get("video_files", [])
+        if f.get("file_type") == "video/mp4" and (f.get("width") or 0) >= MIN_HD_WIDTH
+    ]
+    if not hd_files:
         return None
-    candidates.sort(key=lambda f: f.get("width") or 0)
-    return candidates[0]
+    hd_files.sort(key=lambda f: f.get("width") or 0)
+    capped = [f for f in hd_files if (f.get("width") or 0) <= MAX_PREFERRED_WIDTH]
+    # Prefer the sharpest file within the HD-to-1080p range; if every HD
+    # option is above that (e.g. only 4K is offered), fall back to the
+    # smallest one available rather than downloading an oversized file.
+    return capped[-1] if capped else hd_files[0]
 
 
 def search_clips(keyword: str, api_key: str, per_page: int = 15) -> list:
@@ -81,13 +87,13 @@ def main(video_dir: str):
             seen_ids.add(video["id"])
             downloaded += 1
             dest = clips_dir / f"{downloaded:02d}.mp4"
-            print(f"Downloading clip {downloaded} ({keyword}): {file['link']}")
+            print(f"Downloading clip {downloaded} ({keyword}, {file['width']}x{file['height']}): {file['link']}")
             r = requests.get(file["link"], timeout=60)
             r.raise_for_status()
             dest.write_bytes(r.content)
 
     if downloaded == 0:
-        raise SystemExit("No clips downloaded — check keywords or PEXELS_API_KEY")
+        raise SystemExit("No HD clips downloaded — check keywords or PEXELS_API_KEY")
     print(f"\nDownloaded {downloaded} clips to {clips_dir}")
 
 

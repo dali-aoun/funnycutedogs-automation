@@ -32,7 +32,8 @@ def main(video_dir: str):
         "ffmpeg", "-y", "-i", str(final),
         "-t", str(REEL_MAX_SECONDS),
         "-vf", crop_scale,
-        "-c:v", "libx264", "-c:a", "aac",
+        "-c:v", "libx264", "-crf", "18", "-preset", "medium",
+        "-c:a", "aac",
         str(reel),
     ])
     print(f"\nDone: {reel}")
