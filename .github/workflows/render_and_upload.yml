@@ -24,6 +24,14 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Fetch stock clips (Pexels)
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: python scripts/fetch_clips.py "videos/${{ github.event.inputs.video_slug }}"
+
+      - name: Generate narration
+        run: python scripts/generate_narration.py "videos/${{ github.event.inputs.video_slug }}"
+
       - name: Assemble video
         run: python scripts/assemble_video.py "videos/${{ github.event.inputs.video_slug }}"
 

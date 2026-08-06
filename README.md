@@ -1,9 +1,9 @@
 # FunnyCuteDogs — Pipeline d'automatisation YouTube + Instagram
 
-Automatise le montage et la publication des vidéos de la chaîne `@funnycutedogs`
-sur YouTube et Instagram (Reels). Sourcing des clips = manuel (toi). Montage +
-publication = automatisé, gratuit (GitHub Actions + FFmpeg + YouTube Data API v3
-+ Instagram Graph API + Cloudflare R2).
+Chaîne 100% automatisée pour `@funnycutedogs` : sourcing des clips, narration,
+montage et publication sur YouTube + Instagram (Reels), sans intervention
+manuelle. Entièrement gratuit (GitHub Actions + FFmpeg + Pexels API + Edge TTS
++ YouTube Data API v3 + Instagram Graph API + Cloudflare R2).
 
 ## Setup initial (une seule fois)
 
@@ -21,27 +21,35 @@ publication = automatisé, gratuit (GitHub Actions + FFmpeg + YouTube Data API v
    - `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET`,
      `R2_PUBLIC_URL` (hébergement temporaire public requis par l'API
      Instagram, bucket R2 gratuit)
+   - `PEXELS_API_KEY` (clé gratuite sur [pexels.com/api](https://www.pexels.com/api/),
+     sourcing automatique des clips vidéo libres de droits)
 
 ## Publier une nouvelle vidéo
 
 1. Crée un dossier `videos/<nom-du-theme>/`
-2. Mets tes clips bruts dans `videos/<nom-du-theme>/clips/` (nommés
-   `01.mp4`, `02.mp4`, ... dans l'ordre de montage souhaité)
-3. Ajoute la narration dans `videos/<nom-du-theme>/narration.mp3`
-   (musique de fond optionnelle : `music.mp3`)
-4. Crée `videos/<nom-du-theme>/meta.json` (titre, description, tags) — copie
-   `videos/zoomies/meta.json` comme modèle
-5. Push sur GitHub, puis va dans l'onglet **Actions** → workflow
+2. Crée `videos/<nom-du-theme>/meta.json` — copie `videos/zoomies/meta.json`
+   comme modèle. Il contient tout ce dont le pipeline a besoin :
+   - `title`, `description`, `tags`, `privacyStatus` → métadonnées YouTube
+   - `script` → texte narré, converti en voix off automatiquement
+   - `keywords` → termes de recherche pour trouver des clips libres de droits
+   - `numClips` → nombre de clips à assembler (8 par défaut)
+3. Push sur GitHub, puis va dans l'onglet **Actions** → workflow
    **"Render and upload video"** → **Run workflow** → indique le nom du
    dossier (ex: `zoomies`) → Run
 
 Le workflow :
-1. assemble la vidéo horizontale avec FFmpeg (clips + narration + watermark)
-2. la publie sur YouTube
-3. découpe un Reel vertical 9:16 (60s, le "hook" pour driver vers la vidéo
+1. télécharge des clips libres de droits depuis Pexels (mots-clés du `meta.json`)
+2. génère la narration à partir du `script` (voix neuronale gratuite Edge TTS)
+3. assemble la vidéo horizontale avec FFmpeg (clips + narration + watermark)
+4. la publie sur YouTube
+5. découpe un Reel vertical 9:16 (60s, le "hook" pour driver vers la vidéo
    complète)
-4. l'héberge temporairement sur Cloudflare R2, le publie sur Instagram, puis
+6. l'héberge temporairement sur Cloudflare R2, le publie sur Instagram, puis
    supprime le fichier de R2
+
+Apporter tes propres clips/narration reste possible : il suffit de déposer
+`clips/*.mp4` et `narration.mp3` toi-même, le pipeline ne les régénère que
+s'ils sont absents.
 
 ## Watermark de chaîne (optionnel)
 
