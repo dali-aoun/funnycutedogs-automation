@@ -51,6 +51,15 @@ Apporter tes propres clips/narration reste possible : il suffit de déposer
 `clips/*.mp4` et `narration.mp3` toi-même, le pipeline ne les régénère que
 s'ils sont absents.
 
+## Publication automatique espacée (file d'attente)
+
+`videos/queue.txt` liste les slugs à publier, un par ligne, dans l'ordre.
+Le workflow **"Scheduled publish"** tourne automatiquement Mardi, Jeudi et
+Dimanche à 15h UTC : il dépile la première ligne de la queue, publie cette
+vidéo (YouTube + Instagram), retire la ligne et commit la queue mise à jour.
+Zéro intervention manuelle — il suffit d'ajouter des slugs à `queue.txt` (et
+leur `meta.json` correspondant) pour garder le rythme de publication.
+
 ## Watermark de chaîne (optionnel)
 
 Place un logo PNG transparent dans `assets/logo_watermark.png` — il sera

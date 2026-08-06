@@ -1,0 +1,45 @@
+name: Scheduled publish
+
+# Auto-publishes the next queued video (videos/queue.txt, one slug per line,
+# consumed top to bottom) on the channel's cadence: Tue, Thu, Sun at 15:00 UTC.
+# Fully autonomous — no manual trigger needed once videos are queued.
+on:
+  schedule:
+    - cron: "0 15 * * 2,4,0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  dequeue:
+    runs-on: ubuntu-latest
+    outputs:
+      slug: ${{ steps.pop.outputs.slug }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pop next video from queue
+        id: pop
+        run: |
+          if [ ! -s videos/queue.txt ]; then
+            echo "Queue empty, nothing to publish"
+            echo "slug=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SLUG=$(head -n 1 videos/queue.txt)
+          tail -n +2 videos/queue.txt > videos/queue.txt.tmp && mv videos/queue.txt.tmp videos/queue.txt
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add videos/queue.txt
+          git diff --cached --quiet || git commit -m "chore: dequeue $SLUG for scheduled publish"
+          git push
+
+  publish:
+    needs: dequeue
+    if: needs.dequeue.outputs.slug != ''
+    uses: ./.github/workflows/_render_and_upload.yml
+    with:
+      video_slug: ${{ needs.dequeue.outputs.slug }}
+    secrets: inherit

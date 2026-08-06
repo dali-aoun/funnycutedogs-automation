@@ -12,51 +12,9 @@ on:
         default: "false"
 
 jobs:
-  render-and-upload:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
-
-      - name: Fetch stock clips (Pexels)
-        env:
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-        run: python scripts/fetch_clips.py "videos/${{ github.event.inputs.video_slug }}"
-
-      - name: Generate narration
-        run: python scripts/generate_narration.py "videos/${{ github.event.inputs.video_slug }}"
-
-      - name: Assemble video
-        run: python scripts/assemble_video.py "videos/${{ github.event.inputs.video_slug }}"
-
-      - name: Upload to YouTube
-        if: github.event.inputs.skip_youtube != 'true'
-        env:
-          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-        run: python scripts/upload_to_youtube.py "videos/${{ github.event.inputs.video_slug }}"
-
-      - name: Assemble Instagram Reel
-        run: python scripts/assemble_reel.py "videos/${{ github.event.inputs.video_slug }}"
-
-      - name: Publish to Instagram
-        env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-        run: python scripts/publish_to_instagram.py "videos/${{ github.event.inputs.video_slug }}"
+  call:
+    uses: ./.github/workflows/_render_and_upload.yml
+    with:
+      video_slug: ${{ github.event.inputs.video_slug }}
+      skip_youtube: ${{ github.event.inputs.skip_youtube }}
+    secrets: inherit
