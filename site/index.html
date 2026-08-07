@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Funny & Cute Dogs</title>
+<meta name="description" content="Daily dog videos, behavior facts, and training tips.">
+<style>
+  :root {
+    --bg: #0f0f10;
+    --bg-soft: #1a1a1c;
+    --paper: #ffffff;
+    --ink: #f3f0ea;
+    --ink-dim: #9c9994;
+    --amber: #f0a63c;
+    --amber-soft: rgba(240, 166, 60, 0.14);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: var(--bg);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    padding: 56px 20px 72px;
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgba(240, 166, 60, 0.10), transparent 70%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0 2px, transparent 2px 26px),
+      var(--bg);
+  }
+
+  .page {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .badge {
+    width: 108px;
+    height: 108px;
+    margin: 0 auto 22px;
+    border-radius: 50%;
+    background: var(--bg-soft);
+    border: 2px solid rgba(240, 166, 60, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 6px rgba(240,166,60,0.06), 0 18px 40px -18px rgba(0,0,0,0.7);
+  }
+
+  .badge svg { width: 54px; height: 54px; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+
+  .handle {
+    text-align: center;
+    color: var(--amber);
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin: 0 0 10px;
+  }
+
+  .tagline {
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 auto 34px;
+    max-width: 300px;
+  }
+
+  .links {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: var(--bg-soft);
+    border: 1px solid rgba(255,255,255,0.06);
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .link:hover {
+    transform: translateY(-2px);
+    border-color: rgba(240, 166, 60, 0.4);
+    background: #202022;
+  }
+
+  .link:active { transform: translateY(0); }
+
+  .link .icon {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .link .text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .link .label {
+    font-weight: 600;
+    font-size: 0.98rem;
+  }
+
+  .link .sub {
+    font-size: 0.8rem;
+    color: var(--ink-dim);
+  }
+
+  .link.featured {
+    background: linear-gradient(180deg, rgba(240,166,60,0.16), rgba(240,166,60,0.05));
+    border-color: rgba(240, 166, 60, 0.45);
+  }
+
+  .link.featured .icon { background: var(--amber); color: #1a1206; }
+  .link.youtube .icon { background: #ff3b30; }
+  .link.instagram .icon { background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7); }
+
+  .cadence {
+    text-align: center;
+    margin-top: 34px;
+    font-size: 0.78rem;
+    color: var(--ink-dim);
+    letter-spacing: 0.02em;
+  }
+
+  .cadence strong { color: var(--ink); }
+
+  footer {
+    text-align: center;
+    margin-top: 46px;
+    font-size: 0.72rem;
+    color: #55524c;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8.5 5.5c0 1.4-.9 2.5-2 2.5s-2-1.1-2-2.5S5.4 3 6.5 3s2 1.1 2 2.5Z" fill="#f0a63c"/>
+        <path d="M19.5 5.5c0 1.4-.9 2.5-2 2.5s-2-1.1-2-2.5S16.4 3 17.5 3s2 1.1 2 2.5Z" fill="#f0a63c"/>
+        <path d="M5.5 10.5c0 1.66-1.12 3-2.5 3S.5 12.16.5 10.5 1.62 7.5 3 7.5s2.5 1.34 2.5 3Z" fill="#f0a63c"/>
+        <path d="M23.5 10.5c0 1.66-1.12 3-2.5 3s-2.5-1.34-2.5-3S19.62 7.5 21 7.5s2.5 1.34 2.5 3Z" fill="#f0a63c"/>
+        <path d="M12 10c-3.6 0-6.5 2.8-6.5 6.2 0 1.9 1.5 3.3 3.3 3 .9-.15 1.9-.4 3.2-.4s2.3.25 3.2.4c1.8.3 3.3-1.1 3.3-3C18.5 12.8 15.6 10 12 10Z" fill="#f0a63c"/>
+      </svg>
+    </div>
+
+    <h1>Funny &amp; Cute Dogs</h1>
+    <p class="handle">@funnycutedogs</p>
+    <p class="tagline">Real dog behavior, explained &mdash; plus the clips that make you smile. New videos every Tuesday, Thursday &amp; Sunday.</p>
+
+    <div class="links">
+      <a class="link featured" href="/go/dogtraining">
+        <span class="icon">🧠</span>
+        <span class="text">
+          <span class="label">Free Dog Training Tips</span>
+          <span class="sub">Brain Training for Dogs</span>
+        </span>
+      </a>
+
+      <a class="link youtube" href="https://www.youtube.com/@funnycutedogs" target="_blank" rel="noopener">
+        <span class="icon">▶️</span>
+        <span class="text">
+          <span class="label">Watch on YouTube</span>
+          <span class="sub">Long videos + Shorts</span>
+        </span>
+      </a>
+
+      <a class="link instagram" href="https://www.instagram.com/dogslover_petslover/" target="_blank" rel="noopener">
+        <span class="icon">📸</span>
+        <span class="text">
+          <span class="label">Follow on Instagram</span>
+          <span class="sub">Daily reels</span>
+        </span>
+      </a>
+    </div>
+
+    <p class="cadence">New videos <strong>Tue &middot; Thu &middot; Sun</strong> &mdash; Shorts every day</p>
+
+    <footer>funnycutedogs.com</footer>
+  </div>
+</body>
+</html>
