@@ -1,0 +1,46 @@
+name: Daily shorts publish
+
+# Auto-publishes the next queued short (videos/shorts_queue.txt, one slug
+# per line, consumed top to bottom) every day at 15:00 UTC. This runs
+# independently of the long-form Tue/Thu/Sun schedule (scheduled_publish.yml)
+# to maximize reach/watch-time velocity for YouTube Shorts + Instagram Reels.
+on:
+  schedule:
+    - cron: "0 15 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  dequeue:
+    runs-on: ubuntu-latest
+    outputs:
+      slug: ${{ steps.pop.outputs.slug }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pop next short from queue
+        id: pop
+        run: |
+          if [ ! -s videos/shorts_queue.txt ]; then
+            echo "Shorts queue empty, nothing to publish"
+            echo "slug=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SLUG=$(head -n 1 videos/shorts_queue.txt)
+          tail -n +2 videos/shorts_queue.txt > videos/shorts_queue.txt.tmp && mv videos/shorts_queue.txt.tmp videos/shorts_queue.txt
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add videos/shorts_queue.txt
+          git diff --cached --quiet || git commit -m "chore: dequeue $SLUG for daily shorts publish"
+          git push
+
+  publish:
+    needs: dequeue
+    if: needs.dequeue.outputs.slug != ''
+    uses: ./.github/workflows/_shorts_only.yml
+    with:
+      video_slug: ${{ needs.dequeue.outputs.slug }}
+    secrets: inherit

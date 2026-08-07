@@ -64,9 +64,26 @@ s'ils sont absents.
 `videos/queue.txt` liste les slugs à publier, un par ligne, dans l'ordre.
 Le workflow **"Scheduled publish"** tourne automatiquement Mardi, Jeudi et
 Dimanche à 15h UTC : il dépile la première ligne de la queue, publie cette
-vidéo (YouTube + Instagram), retire la ligne et commit la queue mise à jour.
-Zéro intervention manuelle — il suffit d'ajouter des slugs à `queue.txt` (et
-leur `meta.json` correspondant) pour garder le rythme de publication.
+vidéo (vidéo longue + Short YouTube + Reel Instagram), retire la ligne et
+commit la queue mise à jour. Zéro intervention manuelle — il suffit d'ajouter
+des slugs à `queue.txt` (et leur `meta.json` correspondant) pour garder le
+rythme de publication.
+
+## Shorts/Reels quotidiens (reach + monétisation)
+
+En plus des vidéos longues 3×/semaine, `videos/shorts_queue.txt` alimente un
+second pipeline, **"Daily shorts publish"**, qui tourne **tous les jours** à
+15h UTC. Chaque entrée est un dossier `videos/short-<sujet>/meta.json` (même
+structure que les vidéos longues, sans `numClips` élevé — 4 clips suffisent
+pour un format court) : le pipeline source les clips, génère la narration,
+assemble directement un Short vertical HD (`scripts/assemble_short.py`, ≤58s)
+et le publie sur YouTube Shorts + Instagram Reels.
+
+Publier des Shorts tous les jours est le levier le plus rapide pour la portée
+et pour la monétisation YouTube : le seuil alternatif du programme partenaire
+(10M vues Shorts sur 90 jours) est bien plus accessible via du volume
+quotidien que via des vidéos longues, qui restent à 3×/semaine pour préserver
+leur qualité.
 
 ## Watermark de chaîne (optionnel)
 
