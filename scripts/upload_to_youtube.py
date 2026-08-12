@@ -9,12 +9,13 @@ import json
 import sys
 from pathlib import Path
 
-from youtube_lib import upload_video
+from youtube_lib import set_thumbnail, upload_video
 
 
 def main(video_dir: str):
     video_dir = Path(video_dir)
     final = video_dir / "final.mp4"
+    thumbnail = video_dir / "thumbnail.jpg"
 
     if not final.exists():
         raise SystemExit(f"Missing rendered video: {final}")
@@ -28,6 +29,13 @@ def main(video_dir: str):
         meta.get("privacyStatus", "public"),
     )
     print(f"\nUpload complete: https://youtube.com/watch?v={video_id}")
+
+    if thumbnail.exists():
+        try:
+            set_thumbnail(video_id, thumbnail)
+            print("Custom thumbnail set")
+        except Exception as e:
+            print(f"Could not set custom thumbnail (channel may need phone verification): {e}")
 
 
 if __name__ == "__main__":

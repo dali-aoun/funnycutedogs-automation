@@ -55,3 +55,11 @@ def upload_video(video_path: Path, title: str, description: str, tags: list, pri
             print(f"Uploaded {int(status.progress() * 100)}%")
 
     return response["id"]
+
+
+def set_thumbnail(video_id: str, thumbnail_path: Path):
+    """Best-effort: custom thumbnails require a phone-verified channel, so
+    a failure here shouldn't fail the whole upload."""
+    youtube = build("youtube", "v3", credentials=get_credentials())
+    media = MediaFileUpload(str(thumbnail_path), mimetype="image/jpeg")
+    youtube.thumbnails().set(videoId=video_id, media_body=media).execute()

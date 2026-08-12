@@ -39,6 +39,9 @@ jobs:
       - name: Assemble video
         run: python scripts/assemble_video.py "videos/${{ inputs.video_slug }}"
 
+      - name: Generate custom thumbnail
+        run: python scripts/generate_thumbnail.py "videos/${{ inputs.video_slug }}"
+
       - name: Upload to YouTube
         if: inputs.skip_youtube != 'true'
         env:
