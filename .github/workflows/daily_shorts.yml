@@ -4,6 +4,10 @@ name: Daily shorts publish
 # per line, consumed top to bottom) every day at 15:00 UTC. This runs
 # independently of the long-form Tue/Thu/Sun schedule (scheduled_publish.yml)
 # to maximize reach/watch-time velocity for YouTube Shorts + Instagram Reels.
+#
+# The queue is only dequeued AFTER a successful publish. If publish fails,
+# the slug stays at the front of the queue so the next run retries it —
+# nothing gets silently dropped.
 on:
   schedule:
     - cron: "0 15 * * *"
@@ -13,34 +17,44 @@ permissions:
   contents: write
 
 jobs:
-  dequeue:
+  peek:
     runs-on: ubuntu-latest
     outputs:
-      slug: ${{ steps.pop.outputs.slug }}
+      slug: ${{ steps.peek.outputs.slug }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pop next short from queue
-        id: pop
+      - name: Peek next short in queue
+        id: peek
         run: |
           if [ ! -s videos/shorts_queue.txt ]; then
             echo "Shorts queue empty, nothing to publish"
             echo "slug=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          SLUG=$(head -n 1 videos/shorts_queue.txt)
+          echo "slug=$(head -n 1 videos/shorts_queue.txt)" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: peek
+    if: needs.peek.outputs.slug != ''
+    uses: ./.github/workflows/_shorts_only.yml
+    with:
+      video_slug: ${{ needs.peek.outputs.slug }}
+    secrets: inherit
+
+  dequeue:
+    needs: [peek, publish]
+    if: needs.peek.outputs.slug != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove published short from queue
+        run: |
+          SLUG="${{ needs.peek.outputs.slug }}"
           tail -n +2 videos/shorts_queue.txt > videos/shorts_queue.txt.tmp && mv videos/shorts_queue.txt.tmp videos/shorts_queue.txt
-          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add videos/shorts_queue.txt
-          git diff --cached --quiet || git commit -m "chore: dequeue $SLUG for daily shorts publish"
+          git diff --cached --quiet || git commit -m "chore: dequeue $SLUG (published successfully)"
           git push
-
-  publish:
-    needs: dequeue
-    if: needs.dequeue.outputs.slug != ''
-    uses: ./.github/workflows/_shorts_only.yml
-    with:
-      video_slug: ${{ needs.dequeue.outputs.slug }}
-    secrets: inherit
