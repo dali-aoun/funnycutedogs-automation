@@ -9,7 +9,9 @@ import json
 import sys
 from pathlib import Path
 
-from youtube_lib import set_thumbnail, upload_video
+from youtube_lib import post_comment, set_thumbnail, upload_video
+
+PIN_COMMENT_TEXT = "🔗 Full breakdown + the training program I mentioned: link in the description!"
 
 
 def main(video_dir: str):
@@ -36,6 +38,12 @@ def main(video_dir: str):
             print("Custom thumbnail set")
         except Exception as e:
             print(f"Could not set custom thumbnail (channel may need phone verification): {e}")
+
+    try:
+        post_comment(video_id, PIN_COMMENT_TEXT)
+        print("Posted link comment")
+    except Exception as e:
+        print(f"Could not post comment: {e}")
 
 
 if __name__ == "__main__":

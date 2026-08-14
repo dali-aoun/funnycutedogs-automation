@@ -63,3 +63,19 @@ def set_thumbnail(video_id: str, thumbnail_path: Path):
     youtube = build("youtube", "v3", credentials=get_credentials())
     media = MediaFileUpload(str(thumbnail_path), mimetype="image/jpeg")
     youtube.thumbnails().set(videoId=video_id, media_body=media).execute()
+
+
+def post_comment(video_id: str, text: str):
+    """Posts a top-level comment on the video. The Data API has no endpoint
+    to pin a comment, so this surfaces the link as the first comment rather
+    than a guaranteed-pinned one."""
+    youtube = build("youtube", "v3", credentials=get_credentials())
+    youtube.commentThreads().insert(
+        part="snippet",
+        body={
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {"snippet": {"textOriginal": text}},
+            }
+        },
+    ).execute()

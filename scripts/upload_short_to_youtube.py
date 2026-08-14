@@ -11,9 +11,10 @@ import json
 import sys
 from pathlib import Path
 
-from youtube_lib import upload_video
+from youtube_lib import post_comment, upload_video
 
 SHORTS_HASHTAGS = "#shorts #short"
+PIN_COMMENT_TEXT = "🔗 Full breakdown + the training program I mentioned: link in the description!"
 
 
 def main(video_dir: str):
@@ -36,6 +37,12 @@ def main(video_dir: str):
         meta.get("privacyStatus", "public"),
     )
     print(f"\nShort upload complete: https://youtube.com/shorts/{video_id}")
+
+    try:
+        post_comment(video_id, PIN_COMMENT_TEXT)
+        print("Posted link comment")
+    except Exception as e:
+        print(f"Could not post comment: {e}")
 
 
 if __name__ == "__main__":
