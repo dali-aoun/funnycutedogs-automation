@@ -111,17 +111,6 @@ def publish_container(container_id: str) -> str:
     return resp.json()["id"]
 
 
-def post_comment(media_id: str, text: str):
-    """Best-effort: the Graph API has no pin-comment endpoint, so this just
-    posts a top comment rather than a guaranteed-pinned one."""
-    resp = requests.post(
-        f"{GRAPH_API}/{media_id}/comments",
-        data={"message": text, "access_token": os.environ["IG_ACCESS_TOKEN"]},
-        timeout=30,
-    )
-    resp.raise_for_status()
-
-
 def main(video_dir: str):
     video_dir = Path(video_dir)
     reel = video_dir / "reel.mp4"
@@ -141,12 +130,6 @@ def main(video_dir: str):
         wait_until_ready(container_id)
         media_id = publish_container(container_id)
         print(f"\nPublished to Instagram: media id {media_id}")
-
-        try:
-            post_comment(media_id, "🔗 Full video + more tips: link in bio!")
-            print("Posted link comment")
-        except Exception as e:
-            print(f"Could not post comment: {e}")
     finally:
         delete_from_r2(s3, bucket, object_key)
         print(f"Deleted temporary object {object_key} from R2")
