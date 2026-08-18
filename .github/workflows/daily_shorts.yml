@@ -52,9 +52,24 @@ jobs:
       - name: Remove published short from queue
         run: |
           SLUG="${{ needs.peek.outputs.slug }}"
-          tail -n +2 videos/shorts_queue.txt > videos/shorts_queue.txt.tmp && mv videos/shorts_queue.txt.tmp videos/shorts_queue.txt
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add videos/shorts_queue.txt
-          git diff --cached --quiet || git commit -m "chore: dequeue $SLUG (published successfully)"
-          git push
+          for i in 1 2 3 4 5; do
+            git fetch origin master
+            git reset --hard origin/master
+            if [ ! -s videos/shorts_queue.txt ] || [ "$(head -n 1 videos/shorts_queue.txt)" != "$SLUG" ]; then
+              echo "$SLUG is no longer at the front of the queue (already dequeued by another run) — nothing to do"
+              exit 0
+            fi
+            tail -n +2 videos/shorts_queue.txt > videos/shorts_queue.txt.tmp && mv videos/shorts_queue.txt.tmp videos/shorts_queue.txt
+            git add videos/shorts_queue.txt
+            git commit -m "chore: dequeue $SLUG (published successfully)"
+            if git push; then
+              echo "Dequeued successfully"
+              exit 0
+            fi
+            echo "Push failed (race with another run), retrying ($i)..."
+            sleep 3
+          done
+          echo "::error::Failed to dequeue $SLUG after 5 attempts"
+          exit 1
