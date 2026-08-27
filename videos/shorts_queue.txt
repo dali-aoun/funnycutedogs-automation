@@ -7,3 +7,9 @@ short-why-dogs-guilty-face
 short-why-dogs-sleep-weird-positions
 short-why-dogs-love-treats
 short-why-dogs-love-belly-rubs
+short-why-dogs-love-snow
+short-why-dogs-love-water
+short-why-dogs-play-bow
+short-why-dogs-love-tug-of-war
+short-why-dogs-spin-at-door
+short-why-dogs-side-eye

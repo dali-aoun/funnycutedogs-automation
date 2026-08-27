@@ -1,16 +1,22 @@
 name: Daily shorts publish
 
 # Auto-publishes the next queued short (videos/shorts_queue.txt, one slug
-# per line, consumed top to bottom) every day at 15:00 UTC. This runs
-# independently of the long-form Tue/Thu/Sun schedule (scheduled_publish.yml)
-# to maximize reach/watch-time velocity for YouTube Shorts + Instagram Reels.
+# per line, consumed top to bottom) twice a day (15:00 and 21:00 UTC). This
+# runs independently of the long-form Tue/Thu/Sun schedule
+# (scheduled_publish.yml) to maximize reach/watch-time velocity for YouTube
+# Shorts + Instagram Reels. Two posts/day doubles the number of algorithmic
+# "impression tests" the channel gets per day while reach is still near
+# zero, at the cost of draining the queue twice as fast.
 #
 # The queue is only dequeued AFTER a successful publish. If publish fails,
 # the slug stays at the front of the queue so the next run retries it —
-# nothing gets silently dropped.
+# nothing gets silently dropped. The peek/dequeue split already tolerates
+# two runs landing close together (retry-with-reset + idempotency check),
+# so running twice a day needs no other changes.
 on:
   schedule:
     - cron: "0 15 * * *"
+    - cron: "0 21 * * *"
   workflow_dispatch: {}
 
 permissions:
