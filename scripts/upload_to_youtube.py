@@ -11,7 +11,10 @@ from pathlib import Path
 
 from youtube_lib import post_comment, set_thumbnail, upload_video
 
-PIN_COMMENT_TEXT = "🔗 Full breakdown + the training program I mentioned: link in the description!"
+PIN_COMMENT_TEXT = (
+    "🔗 Full breakdown + the training program I mentioned: link in the description!\n"
+    "🐾 New dog behavior breakdowns every Tue/Thu/Sun — subscribe so you don't miss the next one."
+)
 
 
 def main(video_dir: str):

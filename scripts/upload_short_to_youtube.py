@@ -14,7 +14,10 @@ from pathlib import Path
 from youtube_lib import post_comment, upload_video
 
 SHORTS_HASHTAGS = "#shorts #short"
-PIN_COMMENT_TEXT = "🔗 Full breakdown + the training program I mentioned: link in the description!"
+PIN_COMMENT_TEXT = (
+    "🔗 Full breakdown + the training program I mentioned: link in the description!\n"
+    "🐾 New dog Shorts daily — subscribe so you don't miss the next one."
+)
 
 
 def main(video_dir: str):
