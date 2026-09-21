@@ -1,7 +1,11 @@
 short-couch-territory-dispute
-short-mirror-confusion
+short-nail-trim-escape
+short-two-dogs-same-toy-standoff
+short-food-bowl-swap-outrage
+short-bigger-dog-smaller-dog-standoff
 short-cat-dog-standoff
 short-toy-negotiation-failed
+short-mirror-confusion
 short-blanket-burrito-standoff
 short-shoe-heist
 short-laundry-basket-raid
@@ -9,7 +13,6 @@ short-doorbell-red-alert
 short-car-keys-jingle
 short-leash-appears
 short-bath-time-standoff
-short-nail-trim-escape
 short-vet-scale-refusal
 short-guest-arrival-inspection
 short-baby-monitor-curiosity
@@ -32,9 +35,6 @@ short-sock-mystery
 short-remote-control-guardian
 short-phone-ringtone-interrogation
 short-alarm-clock-crime-scene
-short-two-dogs-same-toy-standoff
-short-food-bowl-swap-outrage
-short-bigger-dog-smaller-dog-standoff
 short-puppy-vs-adult-dog-patience
 short-dog-pack-alert-chain-reaction
 short-dog-under-table-stakeout
