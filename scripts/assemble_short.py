@@ -9,6 +9,11 @@ Most Shorts-feed viewers scroll with sound off, so the first ~3 seconds
 also get meta.json's "hookText" burned in as bold on-screen text (falls
 back to the title if absent) — the hook has to land even when muted.
 
+The last ~3 seconds burn in a "FOLLOW FOR MORE" CTA. YouTube's pinned-
+comment CTA isn't actually pinnable via the Data API (see youtube_lib.py),
+and Shorts viewers rarely open the comment tray anyway, so an on-screen
+CTA is the only reliable way to ask viewers to subscribe.
+
 Expected folder layout, under videos/<slug>/:
     clips/01.mp4, 02.mp4, ...   (raw source clips, in play order)
     narration.mp3               (voice-over track)
@@ -33,6 +38,11 @@ HOOK_FONT_SIZE = 76
 HOOK_LINE_HEIGHT = 96
 HOOK_START_Y = 460
 
+CTA_TEXT = "FOLLOW FOR MORE"
+CTA_DURATION_SECONDS = 3
+CTA_FONT_SIZE = 64
+CTA_START_Y = 1650
+
 FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
@@ -52,13 +62,13 @@ def find_font():
     return None
 
 
-def wrap_hook(text):
+def wrap_text(text, max_chars_per_line, max_lines):
     words = text.upper().split()
     lines = []
     current = ""
     for word in words:
         trial = f"{current} {word}".strip()
-        if len(trial) <= HOOK_MAX_CHARS_PER_LINE:
+        if len(trial) <= max_chars_per_line:
             current = trial
         else:
             if current:
@@ -66,7 +76,20 @@ def wrap_hook(text):
             current = word
     if current:
         lines.append(current)
-    return lines[:HOOK_MAX_LINES]
+    return lines[:max_lines]
+
+
+def probe_duration(path: Path) -> float:
+    out = subprocess.run(
+        [
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(path),
+        ],
+        capture_output=True, text=True, check=True,
+    )
+    return float(out.stdout.strip())
 
 
 def escape_drawtext(text):
@@ -78,8 +101,16 @@ def escape_drawtext(text):
     )
 
 
+def escape_fontfile(font_path):
+    # ffmpeg's filtergraph parser splits on ":" even inside quotes, which
+    # breaks Windows paths like "C:/Windows/Fonts/...". Doesn't affect the
+    # Linux font paths used in CI, but needed for local Windows testing.
+    return font_path.replace(":", "\\:")
+
+
 def build_hook_filters(hook_text, font_path):
-    lines = wrap_hook(hook_text)
+    font_path = escape_fontfile(font_path)
+    lines = wrap_text(hook_text, HOOK_MAX_CHARS_PER_LINE, HOOK_MAX_LINES)
     filters = []
     for i, line in enumerate(lines):
         y = HOOK_START_Y + i * HOOK_LINE_HEIGHT
@@ -90,6 +121,17 @@ def build_hook_filters(hook_text, font_path):
             f"x=(w-text_w)/2:y={y}:enable='between(t,0,{HOOK_DURATION_SECONDS})'"
         )
     return filters
+
+
+def build_cta_filter(font_path, start, end):
+    font_path = escape_fontfile(font_path)
+    line = wrap_text(CTA_TEXT, HOOK_MAX_CHARS_PER_LINE, 1)[0]
+    return (
+        f"drawtext=fontfile='{font_path}':text='{escape_drawtext(line)}':"
+        f"fontsize={CTA_FONT_SIZE}:fontcolor=white:borderw=6:bordercolor=black:"
+        f"box=1:boxcolor=black@0.45:boxborderw=18:"
+        f"x=(w-text_w)/2:y={CTA_START_Y}:enable='between(t,{start},{end})'"
+    )
 
 
 def main(video_dir: str):
@@ -124,14 +166,28 @@ def main(video_dir: str):
 
     video_label = "vconcat"
     font_path = find_font()
+    chain = []
+    prev = "vconcat"
+
     hook_text = meta.get("hookText")
     if hook_text and font_path:
-        chain = []
-        prev = "vconcat"
-        for i, filt in enumerate(build_hook_filters(hook_text, font_path)):
-            out = f"vhook{i}"
+        for filt in build_hook_filters(hook_text, font_path):
+            out = f"vhook{len(chain)}"
             chain.append(f"[{prev}]{filt}[{out}]")
             prev = out
+
+    if font_path:
+        clip_durations = [probe_duration(c) for c in clips]
+        narration_duration = probe_duration(narration)
+        final_duration = min(sum(clip_durations), narration_duration, SHORT_MAX_SECONDS)
+        cta_start = max(final_duration - CTA_DURATION_SECONDS, min(HOOK_DURATION_SECONDS, final_duration))
+        if cta_start < final_duration:
+            filt = build_cta_filter(font_path, round(cta_start, 2), round(final_duration, 2))
+            out = f"vcta{len(chain)}"
+            chain.append(f"[{prev}]{filt}[{out}]")
+            prev = out
+
+    if chain:
         full_filter += ";" + ";".join(chain)
         video_label = prev
 
