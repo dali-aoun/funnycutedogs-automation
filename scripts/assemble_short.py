@@ -40,6 +40,7 @@ HOOK_START_Y = 460
 
 CTA_TEXT = "FOLLOW FOR MORE"
 CTA_DURATION_SECONDS = 3
+CTA_MIN_DURATION_SECONDS = 1.5
 CTA_FONT_SIZE = 64
 CTA_START_Y = 1650
 
@@ -180,8 +181,21 @@ def main(video_dir: str):
         clip_durations = [probe_duration(c) for c in clips]
         narration_duration = probe_duration(narration)
         final_duration = min(sum(clip_durations), narration_duration, SHORT_MAX_SECONDS)
-        cta_start = max(final_duration - CTA_DURATION_SECONDS, min(HOOK_DURATION_SECONDS, final_duration))
-        if cta_start < final_duration:
+
+        # Prefer the CTA fully after the hook window. Short narration (a
+        # handful of words) can make the whole video only a few seconds
+        # long though, leaving too little room after the hook — in that
+        # case let the CTA overlap the hook's tail rather than flash by
+        # too briefly to read.
+        room_after_hook = final_duration - HOOK_DURATION_SECONDS
+        if room_after_hook >= CTA_MIN_DURATION_SECONDS:
+            cta_start = max(final_duration - CTA_DURATION_SECONDS, HOOK_DURATION_SECONDS)
+        elif final_duration >= CTA_MIN_DURATION_SECONDS:
+            cta_start = final_duration - CTA_MIN_DURATION_SECONDS
+        else:
+            cta_start = None
+
+        if cta_start is not None:
             filt = build_cta_filter(font_path, round(cta_start, 2), round(final_duration, 2))
             out = f"vcta{len(chain)}"
             chain.append(f"[{prev}]{filt}[{out}]")
