@@ -1,22 +1,27 @@
 name: Daily shorts publish
 
 # Auto-publishes the next queued short (videos/shorts_queue.txt, one slug
-# per line, consumed top to bottom) twice a day (15:00 and 21:00 UTC). This
-# runs independently of the long-form Tue/Thu/Sun schedule
-# (scheduled_publish.yml) to maximize reach/watch-time velocity for YouTube
-# Shorts + Instagram Reels. Two posts/day doubles the number of algorithmic
-# "impression tests" the channel gets per day while reach is still near
-# zero, at the cost of draining the queue twice as fast.
+# per line, consumed top to bottom) twice a day. This runs independently of
+# the long-form Tue/Thu/Sun schedule (scheduled_publish.yml) to maximize
+# reach/watch-time velocity for YouTube Shorts + Instagram Reels. Two
+# posts/day doubles the number of algorithmic "impression tests" the
+# channel gets per day while reach is still near zero, at the cost of
+# draining the queue twice as fast.
 #
-# The queue is only dequeued AFTER a successful publish. If publish fails,
-# the slug stays at the front of the queue so the next run retries it —
-# nothing gets silently dropped. The peek/dequeue split already tolerates
-# two runs landing close together (retry-with-reset + idempotency check),
-# so running twice a day needs no other changes.
+# Cron times (2026-09-24): shifted 6h earlier than the original 15:00/21:00
+# UTC slots (which land as actual publishes around 18:xx/23:xx UTC — GitHub
+# Actions schedules are best-effort and slip a couple hours). This is a
+# TEST, not a confirmed fix: Instagram's own "Most active times" chart for
+# @dogslover_petslover showed a 6am-12pm peak, but the timezone basis of
+# that chart wasn't verified (could be UTC, the account's set timezone, or
+# the viewer's local browser time) — so treat this as a hypothesis to
+# compare against the previous slot's reach/retention over 1-2 weeks, not
+# a guaranteed improvement. Revert to "0 15 * * *" / "0 21 * * *" if it
+# doesn't help.
 on:
   schedule:
+    - cron: "0 9 * * *"
     - cron: "0 15 * * *"
-    - cron: "0 21 * * *"
   workflow_dispatch: {}
 
 permissions:
