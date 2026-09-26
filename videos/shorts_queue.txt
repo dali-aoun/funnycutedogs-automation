@@ -1,4 +1,3 @@
-short-doorbell-red-alert
 short-car-keys-jingle
 short-leash-appears
 short-bath-time-standoff
