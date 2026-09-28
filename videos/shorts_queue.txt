@@ -1,4 +1,3 @@
-short-vet-scale-refusal
 short-guest-arrival-inspection
 short-baby-monitor-curiosity
 short-thunder-distant-reaction
