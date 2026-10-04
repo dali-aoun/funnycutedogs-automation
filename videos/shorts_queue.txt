@@ -1,4 +1,3 @@
-short-treat-jar-recognition
 short-grocery-bag-inspection
 short-camera-avoidance
 short-window-patrol-duty
