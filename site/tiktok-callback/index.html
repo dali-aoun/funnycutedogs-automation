@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>TikTok authorization | Funny &amp; Cute Dogs</title>
+<link rel="stylesheet" href="/legal.css">
+<style>
+  .box {
+    margin: 18px 0 8px;
+    padding: 16px 18px;
+    background: var(--bg-soft);
+    border: 1px solid rgba(240, 166, 60, 0.35);
+    border-radius: 12px;
+    word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--amber);
+    color: #1a1206;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">&larr; funnycutedogs.com</a>
+  <h1>TikTok authorization</h1>
+  <p class="updated">Used once to connect our own TikTok account to our publishing tool.</p>
+
+  <div id="ok" hidden>
+    <p>Authorization received. Copy the code below and send it back in the chat. It works only once and expires within a few minutes.</p>
+    <div class="box" id="code"></div>
+    <button type="button" id="copy">Copy code</button>
+  </div>
+
+  <div id="ko" hidden>
+    <p id="msg">No authorization code found in this address.</p>
+  </div>
+</main>
+<script>
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var code = p.get("code");
+    var err = p.get("error_description") || p.get("error");
+    if (code) {
+      document.getElementById("code").textContent = code;
+      document.getElementById("ok").hidden = false;
+      document.getElementById("copy").addEventListener("click", function () {
+        var btn = this;
+        function done() { btn.textContent = "Copied"; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(done, function () {});
+        }
+      });
+    } else {
+      if (err) document.getElementById("msg").textContent = "TikTok returned an error: " + err;
+      document.getElementById("ko").hidden = false;
+    }
+  })();
+</script>
+</body>
+</html>
