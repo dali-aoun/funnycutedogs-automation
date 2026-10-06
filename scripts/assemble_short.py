@@ -1,6 +1,6 @@
 """
-Assembles a short-form (<=SHORT_MAX_SECONDS) vertical video directly from
-clips + narration, for videos that are Shorts/Reels-only (no long-form
+Assembles a short-form vertical video (6-10s, see TARGET_* constants)
+directly from clips + narration, for videos that are Shorts/Reels-only (no long-form
 YouTube counterpart). Every clip is scaled and letterboxed onto a fixed
 1080x1920 HD vertical canvas before concatenation, same robustness as
 assemble_video.py's HD normalization.
@@ -31,6 +31,13 @@ TARGET_WIDTH = 1080
 TARGET_HEIGHT = 1920
 TARGET_FPS = 30
 SHORT_MAX_SECONDS = 58
+# Final length is set explicitly. The old "-shortest" gave 6-25s at random
+# (it followed neither the narration nor the clips), and the data says the
+# shortest Shorts win: 6s -> 91% watched, <15s -> ~3x the retention of 25s+.
+TARGET_MIN_SECONDS = 6
+TARGET_MAX_SECONDS = 10
+TARGET_TAIL_SECONDS = 2.5
+NARRATION_END_PADDING_SECONDS = 0.5
 HOOK_DURATION_SECONDS = 3
 HOOK_MAX_CHARS_PER_LINE = 22
 HOOK_MAX_LINES = 3
@@ -39,7 +46,7 @@ HOOK_LINE_HEIGHT = 96
 HOOK_START_Y = 460
 
 CTA_TEXT = "FOLLOW FOR MORE"
-CTA_DURATION_SECONDS = 3
+CTA_DURATION_SECONDS = 2.5
 CTA_MIN_DURATION_SECONDS = 1.5
 CTA_FONT_SIZE = 64
 CTA_START_Y = 1650
@@ -91,6 +98,14 @@ def probe_duration(path: Path) -> float:
         capture_output=True, text=True, check=True,
     )
     return float(out.stdout.strip())
+
+
+def choose_duration(narration_seconds: float, clips_seconds: float) -> float:
+    """Narration plus a short tail, kept inside the 6-10s band, but never so
+    short that the narration is cut off, and never longer than the footage."""
+    target = min(max(narration_seconds + TARGET_TAIL_SECONDS, TARGET_MIN_SECONDS), TARGET_MAX_SECONDS)
+    target = max(target, narration_seconds + NARRATION_END_PADDING_SECONDS)
+    return round(min(target, clips_seconds, SHORT_MAX_SECONDS), 2)
 
 
 def escape_drawtext(text):
@@ -162,8 +177,14 @@ def main(video_dir: str):
     per_clip_filters = ";".join(f"[{i}:v]{scale_pad}[v{i}]" for i in range(clip_count))
     concat_inputs = "".join(f"[v{i}]" for i in range(clip_count))
     concat_filter = f"{concat_inputs}concat=n={clip_count}:v=1:a=0[vconcat]"
-    audio_filter = f"[{narration_idx}:a]volume=1.0[a]"
+    # apad keeps the audio track running to the end so the explicit -t below
+    # (not stream lengths) decides where the video stops.
+    audio_filter = f"[{narration_idx}:a]volume=1.0,apad[a]"
     full_filter = f"{per_clip_filters};{concat_filter};{audio_filter}"
+
+    clip_total = sum(probe_duration(c) for c in clips)
+    final_duration = choose_duration(probe_duration(narration), clip_total)
+    print(f"Final duration: {final_duration}s (clips total {clip_total:.1f}s)")
 
     video_label = "vconcat"
     font_path = find_font()
@@ -178,15 +199,9 @@ def main(video_dir: str):
             prev = out
 
     if font_path:
-        clip_durations = [probe_duration(c) for c in clips]
-        narration_duration = probe_duration(narration)
-        final_duration = min(sum(clip_durations), narration_duration, SHORT_MAX_SECONDS)
-
-        # Prefer the CTA fully after the hook window. Short narration (a
-        # handful of words) can make the whole video only a few seconds
-        # long though, leaving too little room after the hook — in that
-        # case let the CTA overlap the hook's tail rather than flash by
-        # too briefly to read.
+        # Prefer the CTA fully after the hook window; if the video is too
+        # short for both, let it overlap the hook's tail rather than flash
+        # by too briefly to read.
         room_after_hook = final_duration - HOOK_DURATION_SECONDS
         if room_after_hook >= CTA_MIN_DURATION_SECONDS:
             cta_start = max(final_duration - CTA_DURATION_SECONDS, HOOK_DURATION_SECONDS)
@@ -208,9 +223,9 @@ def main(video_dir: str):
     cmd = ["ffmpeg", "-y"] + inputs + [
         "-filter_complex", full_filter,
         "-map", f"[{video_label}]", "-map", "[a]",
-        "-t", str(SHORT_MAX_SECONDS),
+        "-t", str(final_duration),
         "-c:v", "libx264", "-crf", "18", "-preset", "medium",
-        "-c:a", "aac", "-shortest",
+        "-c:a", "aac",
         str(reel),
     ]
     run(cmd)
