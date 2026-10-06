@@ -53,14 +53,19 @@ jobs:
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
         run: python scripts/publish_to_instagram.py "videos/${{ inputs.video_slug }}"
 
-      # TikTok has no unattended public posting for a private tool, so this
-      # sends the video to the TikTok inbox as a draft (publish with one tap
-      # in the app). continue-on-error: a TikTok problem must never block
-      # the YouTube/Instagram publish or the queue dequeue.
-      - name: Send to TikTok inbox (draft)
+      # TikTok has no unattended public posting for a private tool, so the
+      # creator uploads by hand from a computer. This keeps a downloadable
+      # copy plus its caption, listed at funnycutedogs.com/tiktok/.
+      # continue-on-error: a TikTok-side problem must never block the
+      # YouTube/Instagram publish or the queue dequeue.
+      # (scripts/publish_to_tiktok.py can instead send a draft to the phone
+      # app; it is no longer called here.)
+      - name: Archive for TikTok (desktop upload page)
         continue-on-error: true
         env:
-          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
-          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
-          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
-        run: python scripts/publish_to_tiktok.py "videos/${{ inputs.video_slug }}"
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+        run: python scripts/archive_for_tiktok.py "videos/${{ inputs.video_slug }}"
