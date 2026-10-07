@@ -1,0 +1,43 @@
+name: TikTok batch
+
+# Renders the next Shorts in advance and lists them at
+# funnycutedogs.com/tiktok/ so a whole week can be uploaded and scheduled
+# by hand in TikTok Studio. Every Friday, or on demand. It never publishes
+# to YouTube/Instagram and never touches the queue.
+on:
+  schedule:
+    - cron: "0 16 * * 5"
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "How many videos to prepare"
+        required: false
+        default: "14"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Render and archive the next videos
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+        run: python scripts/prepare_tiktok_batch.py "${{ inputs.count || '14' }}"

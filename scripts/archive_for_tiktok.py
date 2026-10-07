@@ -96,8 +96,13 @@ def main(video_dir: str):
         added_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )
 
-    entries = [e for e in load_manifest(s3, bucket) if e.get("slug") != slug]
-    entries.insert(0, entry)
+    # A video prepared ahead of time by prepare_tiktok_batch.py keeps its place
+    # in the posting order when the daily workflow archives it again.
+    existing = load_manifest(s3, bucket)
+    if any(e.get("slug") == slug for e in existing):
+        entries = [entry if e.get("slug") == slug else e for e in existing]
+    else:
+        entries = [entry] + existing
     for old in entries[MAX_ENTRIES:]:
         s3.delete_object(Bucket=bucket, Key=f"tiktok/{old['slug']}.mp4")
         print(f"Removed old archive {old['slug']}")
