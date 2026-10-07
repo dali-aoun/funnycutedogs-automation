@@ -108,6 +108,22 @@ def choose_duration(narration_seconds: float, clips_seconds: float) -> float:
     return round(min(target, clips_seconds, SHORT_MAX_SECONDS), 2)
 
 
+def clip_filter(i: int) -> str:
+    """Fit input i on the 9:16 canvas without black bars: the whole clip stays
+    visible in the middle, over a blurred, darkened, enlarged copy of itself.
+    (A plain center-crop would drop one of the dogs in side-by-side scenes.)
+    The background is blurred at a quarter of the resolution, which is much
+    cheaper and just as smooth."""
+    bg_w, bg_h = TARGET_WIDTH // 4, TARGET_HEIGHT // 4
+    return (
+        f"[{i}:v]fps={TARGET_FPS},split=2[s{i}a][s{i}b];"
+        f"[s{i}a]scale={bg_w}:{bg_h}:force_original_aspect_ratio=increase,crop={bg_w}:{bg_h},"
+        f"boxblur=6:2,scale={TARGET_WIDTH}:{TARGET_HEIGHT},eq=brightness=-0.12[bg{i}];"
+        f"[s{i}b]scale={TARGET_WIDTH}:{TARGET_HEIGHT}:force_original_aspect_ratio=decrease[fg{i}];"
+        f"[bg{i}][fg{i}]overlay=(W-w)/2:(H-h)/2,setsar=1[v{i}]"
+    )
+
+
 def escape_drawtext(text):
     return (
         text.replace("\\", "\\\\")
@@ -170,11 +186,7 @@ def main(video_dir: str):
     inputs += ["-i", str(narration)]
     narration_idx = clip_count
 
-    scale_pad = (
-        f"scale={TARGET_WIDTH}:{TARGET_HEIGHT}:force_original_aspect_ratio=decrease,"
-        f"pad={TARGET_WIDTH}:{TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={TARGET_FPS}"
-    )
-    per_clip_filters = ";".join(f"[{i}:v]{scale_pad}[v{i}]" for i in range(clip_count))
+    per_clip_filters = ";".join(clip_filter(i) for i in range(clip_count))
     concat_inputs = "".join(f"[v{i}]" for i in range(clip_count))
     concat_filter = f"{concat_inputs}concat=n={clip_count}:v=1:a=0[vconcat]"
     # apad keeps the audio track running to the end so the explicit -t below
