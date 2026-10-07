@@ -1,0 +1,23 @@
+name: Meta access check (temporary, read-only)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Who is the token, what can it do, which pages does it see
+        env:
+          TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+        run: |
+          G="https://graph.facebook.com/v19.0"
+          echo "== token owner =="
+          curl -s "$G/me?fields=id,name&access_token=$TOKEN"; echo
+          echo "== permissions =="
+          curl -s "$G/me/permissions?access_token=$TOKEN" | jq -c '[.data[]? | select(.status=="granted") | .permission]'
+          echo "== pages visible to the token =="
+          curl -s "$G/me/accounts?fields=name,id,instagram_business_account&access_token=$TOKEN" | jq -c '.'
+          echo "== the Instagram account =="
+          curl -s "$G/$IG_ID?fields=username,name,followers_count&access_token=$TOKEN" | jq -c '.'
