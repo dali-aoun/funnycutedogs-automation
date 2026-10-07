@@ -61,13 +61,9 @@ jobs:
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
         run: python scripts/upload_short_to_youtube.py "videos/${{ inputs.video_slug }}"
 
-      - name: Publish to Instagram
-        env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-        run: python scripts/publish_to_instagram.py "videos/${{ inputs.video_slug }}"
+      # No Instagram step here on purpose (2026-10-07): the 60s cut of a
+      # long-form video averaged 4-17 views and 3-10% watched on Instagram,
+      # versus 47-91% for the 6s Shorts, which dragged the account's average
+      # down. Instagram now only receives the dedicated Shorts
+      # (_shorts_only.yml). To restore, re-add a step running
+      # scripts/publish_to_instagram.py with the IG_* and R2_* secrets.
