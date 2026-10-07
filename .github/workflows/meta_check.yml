@@ -1,13 +1,16 @@
-name: Meta access check (temporary, read-only)
+name: Meta check
 
 on:
+  push:
+    paths:
+      - ".github/workflows/meta_check.yml"
   workflow_dispatch: {}
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Who is the token, what can it do, which pages does it see
+      - name: Token owner, permissions, visible pages
         env:
           TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
