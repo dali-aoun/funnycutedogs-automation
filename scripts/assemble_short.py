@@ -27,6 +27,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from clip_motion import best_start, motion_profile, plan_segments
+
 TARGET_WIDTH = 1080
 TARGET_HEIGHT = 1920
 TARGET_FPS = 30
@@ -108,6 +110,15 @@ def choose_duration(narration_seconds: float, clips_seconds: float) -> float:
     return round(min(target, clips_seconds, SHORT_MAX_SECONDS), 2)
 
 
+def pick_start(clip: Path, length: float, duration: float) -> float:
+    """Most animated start for a `length`-second cut; 0 if motion can't be read."""
+    try:
+        return best_start(motion_profile(clip), length, duration)
+    except (subprocess.CalledProcessError, OSError) as e:
+        print(f"Motion analysis failed for {clip.name} ({e}); starting at 0s")
+        return 0.0
+
+
 def clip_filter(i: int) -> str:
     """Fit input i on the 9:16 canvas without black bars: the whole clip stays
     visible in the middle, over a blurred, darkened, enlarged copy of itself.
@@ -180,9 +191,19 @@ def main(video_dir: str):
         raise SystemExit(f"Missing narration track: {narration}")
 
     clip_count = len(clips)
+    clip_durations = [probe_duration(c) for c in clips]
+    clip_total = sum(clip_durations)
+    final_duration = choose_duration(probe_duration(narration), clip_total)
+    print(f"Final duration: {final_duration}s (clips total {clip_total:.1f}s)")
+
+    # Each clip contributes an equal share of the final length, taken from its
+    # most animated stretch rather than from second 0.
+    segments = plan_segments(clip_durations, final_duration)
     inputs = []
-    for clip in clips:
-        inputs += ["-i", str(clip)]
+    for clip, duration, length in zip(clips, clip_durations, segments):
+        start = pick_start(clip, length, duration)
+        print(f"{clip.name}: using {length}s from {start}s")
+        inputs += ["-ss", str(start), "-t", str(length), "-i", str(clip)]
     inputs += ["-i", str(narration)]
     narration_idx = clip_count
 
@@ -193,10 +214,6 @@ def main(video_dir: str):
     # (not stream lengths) decides where the video stops.
     audio_filter = f"[{narration_idx}:a]volume=1.0,apad[a]"
     full_filter = f"{per_clip_filters};{concat_filter};{audio_filter}"
-
-    clip_total = sum(probe_duration(c) for c in clips)
-    final_duration = choose_duration(probe_duration(narration), clip_total)
-    print(f"Final duration: {final_duration}s (clips total {clip_total:.1f}s)")
 
     video_label = "vconcat"
     font_path = find_font()

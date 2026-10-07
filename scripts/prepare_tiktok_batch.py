@@ -9,12 +9,13 @@ order. It does NOT upload to YouTube or Instagram and does NOT touch the
 queue; the daily workflow keeps publishing there on its own.
 
 Videos already in the manifest are skipped, so running it twice never
-duplicates work.
+duplicates work. Pass "refresh" to re-render them anyway (they keep their
+place in the list).
 
 Env: PEXELS_API_KEY plus the R2_* variables used by archive_for_tiktok.py.
 
 Usage:
-    python scripts/prepare_tiktok_batch.py 14
+    python scripts/prepare_tiktok_batch.py 14 [refresh]
 """
 import os
 import subprocess
@@ -35,14 +36,14 @@ def render(slug: str):
         subprocess.run([sys.executable, str(SCRIPTS / step), str(video_dir)], check=True)
 
 
-def main(count: int):
+def main(count: int, refresh: bool = False):
     missing = [name for name in REQUIRED_ENV if not os.environ.get(name)]
     if missing or not os.environ.get("PEXELS_API_KEY"):
         raise SystemExit(f"Missing environment: {', '.join(missing) or 'PEXELS_API_KEY'}")
 
     queue = [s.strip() for s in (ROOT / "videos" / "shorts_queue.txt").read_text().splitlines() if s.strip()]
     already = {e["slug"] for e in load_manifest(r2_client(), os.environ["R2_BUCKET"])}
-    todo = [s for s in queue if s not in already][:count]
+    todo = [s for s in queue if refresh or s not in already][:count]
     print(f"Preparing {len(todo)} video(s): {', '.join(todo)}")
 
     done, failed = [], []
@@ -63,4 +64,4 @@ def main(count: int):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_COUNT)
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_COUNT, "refresh" in sys.argv[2:])
