@@ -12,7 +12,7 @@ on:
       count:
         description: "How many videos to prepare"
         required: false
-        default: "14"
+        default: "21"
       refresh:
         description: "Re-render videos that are already on the page"
         type: boolean
@@ -44,4 +44,4 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-        run: python scripts/prepare_tiktok_batch.py "${{ inputs.count || '14' }}" ${{ inputs.refresh && 'refresh' || '' }}
+        run: python scripts/prepare_tiktok_batch.py "${{ inputs.count || '21' }}" ${{ inputs.refresh && 'refresh' || '' }}

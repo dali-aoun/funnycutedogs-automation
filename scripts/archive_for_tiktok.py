@@ -30,7 +30,8 @@ from botocore.exceptions import ClientError
 from tiktok_captions import build_caption
 
 MANIFEST_KEY = "tiktok/manifest.json"
-MAX_ENTRIES = 45
+MAX_ENTRIES = 60
+LEGACY_SEQ_BASE = -100000  # entries from before `seq` existed keep their list order, ahead of new ones
 REQUIRED_ENV = ("R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_ENDPOINT", "R2_BUCKET", "R2_PUBLIC_URL")
 
 
@@ -63,7 +64,16 @@ def save_manifest(s3, bucket: str, entries: list):
     )
 
 
-def main(video_dir: str):
+def with_seq(entries: list) -> list:
+    """Give entries that predate `seq` one, following their list order (top = next to post)."""
+    return [e if "seq" in e else {**e, "seq": LEGACY_SEQ_BASE + i} for i, e in enumerate(entries)]
+
+
+def next_seq(entries: list) -> int:
+    return max((e["seq"] for e in entries), default=-1) + 1
+
+
+def main(video_dir: str, seq: int = None):
     missing = [name for name in REQUIRED_ENV if not os.environ.get(name)]
     if missing:
         print(f"R2 not configured (missing {', '.join(missing)}), skipping TikTok archive.")
@@ -98,10 +108,14 @@ def main(video_dir: str):
 
     # A video prepared ahead of time by prepare_tiktok_batch.py keeps its place
     # in the posting order when the daily workflow archives it again.
-    existing = load_manifest(s3, bucket)
-    if any(e.get("slug") == slug for e in existing):
+    # `seq` is the posting order (lowest = post first); the page sorts on it.
+    existing = with_seq(load_manifest(s3, bucket))
+    previous = next((e for e in existing if e.get("slug") == slug), None)
+    if previous:
+        entry["seq"] = previous["seq"]
         entries = [entry if e.get("slug") == slug else e for e in existing]
     else:
+        entry["seq"] = seq if seq is not None else next_seq(existing)
         entries = [entry] + existing
     for old in entries[MAX_ENTRIES:]:
         s3.delete_object(Bucket=bucket, Key=f"tiktok/{old['slug']}.mp4")

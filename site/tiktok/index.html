@@ -126,7 +126,7 @@
 
     var m = el("div", "meta");
     m.appendChild(el("h3", "", item.title));
-    m.appendChild(el("p", "when", "Publié le " + fmtDate(item.added_at)));
+    m.appendChild(el("p", "when", "Prête le " + fmtDate(item.added_at)));
     m.appendChild(el("p", "desc", item.description));
     m.appendChild(el("p", "tags", item.hashtags));
 
@@ -161,6 +161,8 @@
     var shown = items.filter(function (i) {
       return filter === "all" || (filter === "done" ? !!done[i.slug] : !done[i.slug]);
     });
+    // "À faire": lowest seq first = the next video to post. Other views keep the list order.
+    if (filter === "todo") shown = shown.slice().sort(function (a, b) { return a._seq - b._seq; });
     shown.forEach(function (i) { list.appendChild(card(i)); });
     var todo = items.filter(function (i) { return !done[i.slug]; }).length;
     document.getElementById("count").textContent = todo + " à faire sur " + items.length;
@@ -182,7 +184,10 @@
 
   fetch(MANIFEST_URL, { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function (data) { items = data; render(); })
+    .then(function (data) {
+      items = data.map(function (d, i) { d._seq = typeof d.seq === "number" ? d.seq : i - 100000; return d; });
+      render();
+    })
     .catch(function () {
       var empty = document.getElementById("empty");
       empty.hidden = false;
