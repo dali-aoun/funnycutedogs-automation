@@ -55,10 +55,15 @@ def build_caption(meta: dict) -> str:
     # Raw URLs aren't clickable in an Instagram caption, so drive to the bio
     # link instead of reusing the YouTube description (which embeds one).
     hashtags = " ".join(f"#{tag.replace(' ', '')}" for tag in meta.get("tags", [])[:8])
+    promo = meta.get("promotesTitle")
+    pointer = (
+        f"▶ Full video on YouTube: {promo} (link in bio)"
+        if promo else "🐾 Full video + more on the link in bio!"
+    )
     parts = [
         meta["title"],
         "",
-        "🐾 Full video + more on the link in bio!",
+        pointer,
         "",
         f"{hashtags} #shorts #short".strip(),
     ]

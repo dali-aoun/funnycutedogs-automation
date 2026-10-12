@@ -11,13 +11,27 @@ import json
 import sys
 from pathlib import Path
 
-from youtube_lib import post_comment, upload_video
+from youtube_lib import find_video_id_by_title, post_comment, upload_video
 
 SHORTS_HASHTAGS = "#shorts #short"
 PIN_COMMENT_TEXT = (
     "🔗 Full breakdown + the training program I mentioned: link in the description!\n"
     "🐾 New dog Shorts daily — subscribe so you don't miss the next one."
 )
+
+
+def promo_url(meta: dict):
+    """Link to the long-form this Short advertises, if it is already published.
+    YouTube lets Shorts descriptions and comments link to other YouTube videos."""
+    title = meta.get("promotesTitle")
+    if not title:
+        return None
+    try:
+        video_id = find_video_id_by_title(title)
+    except Exception as e:
+        print(f"Could not look up the promoted video: {e}")
+        return None
+    return f"https://youtu.be/{video_id}" if video_id else None
 
 
 def main(video_dir: str):
@@ -29,7 +43,9 @@ def main(video_dir: str):
     meta = json.loads((video_dir / "meta.json").read_text())
 
     title = f"{meta['title']} {SHORTS_HASHTAGS}"
-    description = f"{meta['description']}\n\n{SHORTS_HASHTAGS}"
+    link = promo_url(meta)
+    promo = f"▶ Full video: {meta['promotesTitle']}\n{link}\n\n" if link else ""
+    description = f"{promo}{meta['description']}\n\n{SHORTS_HASHTAGS}"
     tags = meta.get("tags", []) + ["shorts", "short"]
 
     video_id = upload_video(
@@ -42,7 +58,7 @@ def main(video_dir: str):
     print(f"\nShort upload complete: https://youtube.com/shorts/{video_id}")
 
     try:
-        post_comment(video_id, PIN_COMMENT_TEXT)
+        post_comment(video_id, f"▶ Full video: {link}" if link else PIN_COMMENT_TEXT)
         print("Posted link comment")
     except Exception as e:
         print(f"Could not post comment: {e}")

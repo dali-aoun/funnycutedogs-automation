@@ -47,7 +47,12 @@ HOOK_FONT_SIZE = 76
 HOOK_LINE_HEIGHT = 96
 HOOK_START_Y = 460
 
-CTA_TEXT = "FOLLOW FOR MORE"
+# Shorts are ads for the long-form videos: a Short that promotes one says so;
+# the others promise a daily video (the "series" test, replaces FOLLOW FOR MORE).
+DEFAULT_CTA_TEXT = "NEW DOG VIDEO DAILY"
+PROMO_CTA_TEXT = "FULL VIDEO ON YOUTUBE"
+CTA_MAX_TEXT_WIDTH = 920
+CTA_CHAR_WIDTH_EM = 0.8  # wide enough for DejaVu Sans Bold capitals, the CI font
 CTA_DURATION_SECONDS = 2.5
 CTA_MIN_DURATION_SECONDS = 1.5
 CTA_FONT_SIZE = 64
@@ -166,12 +171,20 @@ def build_hook_filters(hook_text, font_path):
     return filters
 
 
-def build_cta_filter(font_path, start, end):
+def cta_text_for(meta):
+    return meta.get("ctaText") or (PROMO_CTA_TEXT if meta.get("promotes") else DEFAULT_CTA_TEXT)
+
+
+def cta_font_size(text):
+    return min(CTA_FONT_SIZE, int(CTA_MAX_TEXT_WIDTH / (len(text) * CTA_CHAR_WIDTH_EM)))
+
+
+def build_cta_filter(font_path, start, end, text):
     font_path = escape_fontfile(font_path)
-    line = wrap_text(CTA_TEXT, HOOK_MAX_CHARS_PER_LINE, 1)[0]
+    line = wrap_text(text, HOOK_MAX_CHARS_PER_LINE, 1)[0]
     return (
         f"drawtext=fontfile='{font_path}':text='{escape_drawtext(line)}':"
-        f"fontsize={CTA_FONT_SIZE}:fontcolor=white:borderw=6:bordercolor=black:"
+        f"fontsize={cta_font_size(line)}:fontcolor=white:borderw=6:bordercolor=black:"
         f"box=1:boxcolor=black@0.45:boxborderw=18:"
         f"x=(w-text_w)/2:y={CTA_START_Y}:enable='between(t,{start},{end})'"
     )
@@ -240,7 +253,7 @@ def main(video_dir: str):
             cta_start = None
 
         if cta_start is not None:
-            filt = build_cta_filter(font_path, round(cta_start, 2), round(final_duration, 2))
+            filt = build_cta_filter(font_path, round(cta_start, 2), round(final_duration, 2), cta_text_for(meta))
             out = f"vcta{len(chain)}"
             chain.append(f"[{prev}]{filt}[{out}]")
             prev = out

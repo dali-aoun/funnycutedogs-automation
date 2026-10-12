@@ -69,6 +69,26 @@ def set_thumbnail(video_id: str, thumbnail_path: Path):
     youtube.thumbnails().set(videoId=video_id, media_body=media).execute()
 
 
+def find_video_id_by_title(title: str):
+    """Id of the channel upload whose title is exactly `title`, or None (e.g. the
+    long-form a Short promotes hasn't been published yet). Walks the uploads
+    playlist: 1 quota unit per 50 videos."""
+    youtube = build("youtube", "v3", credentials=get_credentials())
+    channel = youtube.channels().list(part="contentDetails", mine=True).execute()
+    uploads = channel["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    page = None
+    while True:
+        resp = youtube.playlistItems().list(
+            part="snippet", playlistId=uploads, maxResults=50, pageToken=page
+        ).execute()
+        for item in resp["items"]:
+            if item["snippet"]["title"].strip() == title.strip():
+                return item["snippet"]["resourceId"]["videoId"]
+        page = resp.get("nextPageToken")
+        if not page:
+            return None
+
+
 def post_comment(video_id: str, text: str):
     """Posts a top-level comment on the video. The Data API has no endpoint
     to pin a comment, so this surfaces the link as the first comment rather

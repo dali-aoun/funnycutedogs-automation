@@ -34,7 +34,12 @@ def build_caption(meta: dict) -> dict:
     topical = [t for t in meta.get("tags", []) if t.lower() not in GENERIC_TAGS]
     topic_tags = [hashtag(t) for t in topical[:MAX_TOPIC_HASHTAGS]]
     hashtags = BASE_HASHTAGS + topic_tags
-    caption = f"{title} \U0001F43E\n\n{one_liner}\n\nFollow for daily dog clips \U0001F436\n\n{' '.join(hashtags)}"
+    promo = meta.get("promotesTitle")
+    closing = (
+        f"▶ Full video on YouTube: {promo} (funny & cute dogs)"
+        if promo else "Follow for daily dog clips \U0001F436"
+    )
+    caption = f"{title} \U0001F43E\n\n{one_liner}\n\n{closing}\n\n{' '.join(hashtags)}"
     return {
         "title": title,
         "description": one_liner,
