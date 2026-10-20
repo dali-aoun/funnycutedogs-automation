@@ -1,0 +1,33 @@
+name: Cross-link related videos
+
+# Adds "Related videos" links to the descriptions of published videos that share a
+# topic (groups in videos/crosslinks.json). Manual only; re-running is safe. Start
+# with dry_run to see what would change.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only print what would change"
+        type: boolean
+        default: true
+
+jobs:
+  cross-link:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Add related-video links
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/cross_link_videos.py ${{ inputs.dry_run && '--dry-run' || '' }}
