@@ -1,2 +1,4 @@
 # Pexels video ids that must never be used in a Short (one per line; text after # is a note).
 # Example: 123456  # two dogs mounting, flagged 'Sex and Nudity' by TikTok
+16436877  # american bulldog, San Antonio: one of the 2 clips of the Short TikTok restricted (Sex and Nudity, under-18); unsure which
+12130310  # pitbull with tennis ball: the other clip of that same Short

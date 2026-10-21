@@ -9,6 +9,10 @@ on:
         description: "Short slugs to report the chosen Pexels clip for (space separated)"
         required: false
         default: "short-dog-excited-by-own-shadow"
+      quick:
+        description: "Smoke test: only the slugs above (a few Pexels requests)"
+        type: boolean
+        default: false
 
 jobs:
   audit:
@@ -28,4 +32,5 @@ jobs:
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          QUICK: ${{ inputs.quick }}
         run: python scripts/audit_clip_reuse.py ${{ inputs.slugs }}

@@ -22,12 +22,12 @@ from pathlib import Path
 import requests
 
 from fetch_clips import (
-    MAX_DURATION_SECONDS, MIN_DURATION_SECONDS, candidates_for, load_blocklist, pick_video_file, search_clips,
+    MAX_DURATION_SECONDS, MIN_DURATION_SECONDS, choose_clips, load_blocklist, pick_video_file, search_clips,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
 VIDEOS = ROOT / "videos"
-QUEUE_HEAD = 40
+QUEUE_HEAD = 20
 PAUSE_SECONDS = 0.4  # Pexels free tier: 200 requests / hour
 
 
@@ -51,7 +51,8 @@ def old_choice(results: list, count: int) -> list:
 def main(report_slugs: list):
     api_key = os.environ["PEXELS_API_KEY"]
     blocked = load_blocklist()
-    slugs = list(dict.fromkeys(manifest_slugs() + read_queue()[:QUEUE_HEAD] + report_slugs))
+    quick = os.environ.get("QUICK") == "true"  # smoke test: only the slugs given, a handful of requests
+    slugs = report_slugs if quick else list(dict.fromkeys(manifest_slugs() + read_queue()[:QUEUE_HEAD] + report_slugs))
     cache = {}
 
     def results_for(keyword):
@@ -71,7 +72,7 @@ def main(report_slugs: list):
         results = results_for(keyword)
         picks = {
             "old": old_choice(results, count),
-            "new": candidates_for(slug, keyword, results, blocked)[:count],
+            "new": [v for _, v in choose_clips(slug, meta["keywords"], count, results_for, blocked)],
         }
         for mode, videos in picks.items():
             for v in videos:

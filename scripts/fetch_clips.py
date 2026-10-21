@@ -27,10 +27,11 @@ MAX_DURATION_SECONDS = 25
 MIN_HD_WIDTH = 1280
 MAX_PREFERRED_WIDTH = 1920
 # Clips are picked at random (seeded by the video's slug, so a re-render gives the same
-# footage) among the best-ranked results, instead of always the top ones: the old
+# footage) among the best-ranked results (one clip per keyword in turn, so two videos rarely share the same pair), instead of always the top ones: the old
 # "first valid result" rule gave different Shorts the very same clip, and TikTok
 # treats repeated footage as unoriginal content.
-CANDIDATE_POOL = 8
+CANDIDATE_POOL = 20
+SEARCH_PER_PAGE = 30
 BLOCKLIST_FILE = Path(__file__).resolve().parent.parent / "videos" / "blocked_clips.txt"
 # Pexels page URLs carry a description slug; never take a clip whose slug hints at adult content.
 UNSAFE_URL_WORDS = re.compile(r"mating|humping|breeding|copulat|sex|naked|nude|porn|erotic", re.I)
@@ -78,7 +79,7 @@ def candidates_for(slug: str, keyword: str, results: list, blocked: set) -> list
     return pool
 
 
-def search_clips(keyword: str, api_key: str, per_page: int = 15) -> list:
+def search_clips(keyword: str, api_key: str, per_page: int = SEARCH_PER_PAGE) -> list:
     resp = requests.get(
         PEXELS_SEARCH_URL,
         headers={"Authorization": api_key},
@@ -87,6 +88,32 @@ def search_clips(keyword: str, api_key: str, per_page: int = 15) -> list:
     )
     resp.raise_for_status()
     return resp.json().get("videos", [])
+
+
+def choose_clips(slug: str, keywords: list, num_clips: int, results_for, blocked: set) -> list:
+    """[(keyword, pexels video)] for one video: a clip per keyword in turn (seeded, HD only),
+    never the same clip twice. `results_for(keyword)` returns the Pexels search results."""
+    pools, exhausted, chosen, seen = {}, set(), [], set()
+    turn = 0
+    while len(chosen) < num_clips and len(exhausted) < len(keywords):
+        i = turn % len(keywords)
+        turn += 1
+        if i in exhausted:
+            continue
+        if i not in pools:
+            pools[i] = [
+                v for v in candidates_for(slug, keywords[i], results_for(keywords[i]), blocked)
+                if pick_video_file(v)
+            ]
+        while pools[i]:
+            video = pools[i].pop(0)
+            if video["id"] not in seen:
+                seen.add(video["id"])
+                chosen.append((keywords[i], video))
+                break
+        else:
+            exhausted.add(i)
+    return chosen
 
 
 def main(video_dir: str):
@@ -106,29 +133,24 @@ def main(video_dir: str):
     api_key = os.environ["PEXELS_API_KEY"]
     clips_dir.mkdir(parents=True, exist_ok=True)
 
-    blocked = load_blocklist()
-    seen_ids = set()
+    searches = {}
+
+    def results_for(keyword):
+        if keyword not in searches:
+            searches[keyword] = search_clips(keyword, api_key)
+        return searches[keyword]
+
     chosen = []
     downloaded = 0
-    for keyword in keywords:
-        if downloaded >= num_clips:
-            break
-        for video in candidates_for(video_dir.name, keyword, search_clips(keyword, api_key), blocked):
-            if downloaded >= num_clips:
-                break
-            if video["id"] in seen_ids:
-                continue
-            file = pick_video_file(video)
-            if not file:
-                continue
-            seen_ids.add(video["id"])
-            chosen.append({"id": video["id"], "url": video.get("url"), "keyword": keyword})
-            downloaded += 1
-            dest = clips_dir / f"{downloaded:02d}.mp4"
-            print(f"Downloading clip {downloaded} ({keyword}, {file['width']}x{file['height']}): {file['link']}")
-            r = requests.get(file["link"], timeout=60)
-            r.raise_for_status()
-            dest.write_bytes(r.content)
+    for keyword, video in choose_clips(video_dir.name, keywords, num_clips, results_for, load_blocklist()):
+        file = pick_video_file(video)
+        downloaded += 1
+        chosen.append({"id": video["id"], "url": video.get("url"), "keyword": keyword})
+        dest = clips_dir / f"{downloaded:02d}.mp4"
+        print(f"Downloading clip {downloaded} ({keyword}, {file['width']}x{file['height']}): {file['link']}")
+        r = requests.get(file["link"], timeout=60)
+        r.raise_for_status()
+        dest.write_bytes(r.content)
 
     (clips_dir / "clips.json").write_text(json.dumps(chosen, indent=1), encoding="utf-8")
     if downloaded == 0:
