@@ -34,6 +34,14 @@ CANDIDATE_POOL = 20
 SEARCH_PER_PAGE = 30
 BLOCKLIST_FILE = Path(__file__).resolve().parent.parent / "videos" / "blocked_clips.txt"
 # Pexels page URLs carry a description slug; never take a clip whose slug hints at adult content.
+# A wider pool lets in off-topic footage (a "dog stretching" search returned a woman working out), so clips whose
+# Pexels description names a dog are preferred; others are only used when too few dog clips exist.
+DOG_URL_WORDS = re.compile(
+    r"dog|puppy|puppies|pup|canine|corgi|labrador|retriever|husky|poodle|pug|bulldog|beagle|shepherd|pitbull|"
+    r"pit-bull|chihuahua|terrier|dachshund|spaniel|collie|maltese|shih|doberman|rottweiler|boxer|schnauzer|samoyed|akita|malamute",
+    re.I,
+)
+MIN_DOG_CLIPS = 3
 UNSAFE_URL_WORDS = re.compile(r"mating|humping|breeding|copulat|sex|naked|nude|porn|erotic", re.I)
 
 
@@ -74,7 +82,9 @@ def is_usable(video: dict, blocked: set) -> bool:
 
 def candidates_for(slug: str, keyword: str, results: list, blocked: set) -> list:
     """Usable results for one keyword in this video's own (seeded) order."""
-    pool = [v for v in results if is_usable(v, blocked)][:CANDIDATE_POOL]
+    usable = [v for v in results if is_usable(v, blocked)]
+    dogs = [v for v in usable if DOG_URL_WORDS.search(v.get("url", ""))]
+    pool = (dogs if len(dogs) >= MIN_DOG_CLIPS else usable)[:CANDIDATE_POOL]
     random.Random(f"{slug}|{keyword}").shuffle(pool)
     return pool
 
