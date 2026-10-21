@@ -41,6 +41,7 @@ DOG_URL_WORDS = re.compile(
     r"pit-bull|chihuahua|terrier|dachshund|spaniel|collie|maltese|shih|doberman|rottweiler|boxer|schnauzer|samoyed|akita|malamute",
     re.I,
 )
+NOT_A_DOG_URL_WORDS = re.compile(r"yoga|downward|hot-?dog|workout|exercise|plush|stuffed|cartoon", re.I)
 MIN_DOG_CLIPS = 3
 UNSAFE_URL_WORDS = re.compile(r"mating|humping|breeding|copulat|sex|naked|nude|porn|erotic", re.I)
 
@@ -83,7 +84,10 @@ def is_usable(video: dict, blocked: set) -> bool:
 def candidates_for(slug: str, keyword: str, results: list, blocked: set) -> list:
     """Usable results for one keyword in this video's own (seeded) order."""
     usable = [v for v in results if is_usable(v, blocked)]
-    dogs = [v for v in usable if DOG_URL_WORDS.search(v.get("url", ""))]
+    dogs = [
+        v for v in usable
+        if DOG_URL_WORDS.search(v.get("url", "")) and not NOT_A_DOG_URL_WORDS.search(v.get("url", ""))
+    ]
     pool = (dogs if len(dogs) >= MIN_DOG_CLIPS else usable)[:CANDIDATE_POOL]
     random.Random(f"{slug}|{keyword}").shuffle(pool)
     return pool
