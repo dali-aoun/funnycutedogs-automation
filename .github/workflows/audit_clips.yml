@@ -1,0 +1,31 @@
+name: Audit clip reuse
+
+# Manual diagnostic: how many Shorts share the same stock clip (old vs current selection),
+# and which Pexels clip a given Short uses. Downloads nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      slugs:
+        description: "Short slugs to report the chosen Pexels clip for (space separated)"
+        required: false
+        default: "short-dog-excited-by-own-shadow"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Audit
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+        run: python scripts/audit_clip_reuse.py ${{ inputs.slugs }}

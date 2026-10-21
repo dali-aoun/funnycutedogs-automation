@@ -14,6 +14,8 @@ Usage:
 """
 import json
 import os
+import random
+import re
 import sys
 from pathlib import Path
 
@@ -24,6 +26,14 @@ MIN_DURATION_SECONDS = 3
 MAX_DURATION_SECONDS = 25
 MIN_HD_WIDTH = 1280
 MAX_PREFERRED_WIDTH = 1920
+# Clips are picked at random (seeded by the video's slug, so a re-render gives the same
+# footage) among the best-ranked results, instead of always the top ones: the old
+# "first valid result" rule gave different Shorts the very same clip, and TikTok
+# treats repeated footage as unoriginal content.
+CANDIDATE_POOL = 8
+BLOCKLIST_FILE = Path(__file__).resolve().parent.parent / "videos" / "blocked_clips.txt"
+# Pexels page URLs carry a description slug; never take a clip whose slug hints at adult content.
+UNSAFE_URL_WORDS = re.compile(r"mating|humping|breeding|copulat|sex|naked|nude|porn|erotic", re.I)
 
 
 def pick_video_file(video: dict):
@@ -39,6 +49,33 @@ def pick_video_file(video: dict):
     # option is above that (e.g. only 4K is offered), fall back to the
     # smallest one available rather than downloading an oversized file.
     return capped[-1] if capped else hd_files[0]
+
+
+def load_blocklist() -> set:
+    """Pexels video ids that must never be used (one per line, '#' comments allowed)."""
+    if not BLOCKLIST_FILE.exists():
+        return set()
+    ids = set()
+    for line in BLOCKLIST_FILE.read_text(encoding="utf-8").splitlines():
+        token = line.split("#", 1)[0].strip()
+        if token.isdigit():
+            ids.add(int(token))
+    return ids
+
+
+def is_usable(video: dict, blocked: set) -> bool:
+    return (
+        video["id"] not in blocked
+        and not UNSAFE_URL_WORDS.search(video.get("url", ""))
+        and MIN_DURATION_SECONDS <= video["duration"] <= MAX_DURATION_SECONDS
+    )
+
+
+def candidates_for(slug: str, keyword: str, results: list, blocked: set) -> list:
+    """Usable results for one keyword in this video's own (seeded) order."""
+    pool = [v for v in results if is_usable(v, blocked)][:CANDIDATE_POOL]
+    random.Random(f"{slug}|{keyword}").shuffle(pool)
+    return pool
 
 
 def search_clips(keyword: str, api_key: str, per_page: int = 15) -> list:
@@ -69,22 +106,23 @@ def main(video_dir: str):
     api_key = os.environ["PEXELS_API_KEY"]
     clips_dir.mkdir(parents=True, exist_ok=True)
 
+    blocked = load_blocklist()
     seen_ids = set()
+    chosen = []
     downloaded = 0
     for keyword in keywords:
         if downloaded >= num_clips:
             break
-        for video in search_clips(keyword, api_key):
+        for video in candidates_for(video_dir.name, keyword, search_clips(keyword, api_key), blocked):
             if downloaded >= num_clips:
                 break
             if video["id"] in seen_ids:
-                continue
-            if not (MIN_DURATION_SECONDS <= video["duration"] <= MAX_DURATION_SECONDS):
                 continue
             file = pick_video_file(video)
             if not file:
                 continue
             seen_ids.add(video["id"])
+            chosen.append({"id": video["id"], "url": video.get("url"), "keyword": keyword})
             downloaded += 1
             dest = clips_dir / f"{downloaded:02d}.mp4"
             print(f"Downloading clip {downloaded} ({keyword}, {file['width']}x{file['height']}): {file['link']}")
@@ -92,6 +130,7 @@ def main(video_dir: str):
             r.raise_for_status()
             dest.write_bytes(r.content)
 
+    (clips_dir / "clips.json").write_text(json.dumps(chosen, indent=1), encoding="utf-8")
     if downloaded == 0:
         raise SystemExit("No HD clips downloaded — check keywords or PEXELS_API_KEY")
     print(f"\nDownloaded {downloaded} clips to {clips_dir}")
