@@ -21,17 +21,28 @@ PIN_COMMENT_TEXT = (
 )
 
 
+def search_phrase(meta: dict):
+    """The question people type to find this Short: the long video's exact title for a Short that
+    advertises one, else the Short's own meta.json "youtubeQuery"."""
+    return meta.get("promotesTitle") or meta.get("youtubeQuery")
+
+
 def short_title(meta: dict) -> str:
-    """A Short that advertises a long video leads with that video's exact question:
-    on this channel, Shorts reach people through YouTube search (91% of Shorts views,
-    ~0 from the Shorts feed), and the one titled like its long video got 3x the views
-    of the teaser-titled ones. Stays under YouTube's 100-char limit with the hashtags."""
-    promo = meta.get("promotesTitle")
-    if not promo:
+    """A Short leads with its search phrase: on this channel, Shorts reach people through YouTube
+    search (91% of Shorts views, ~0 from the Shorts feed), and the Short titled like its long video
+    got 3x the views of teaser-titled ones. Stays under YouTube's 100-char limit with the hashtags."""
+    phrase = search_phrase(meta)
+    if not phrase:
         return meta["title"]
     limit = MAX_TITLE_CHARS - len(SHORTS_HASHTAGS) - 1
-    combined = f"{promo} | {meta['title']}"
-    return combined if len(combined) <= limit else promo[:limit]
+    combined = f"{phrase} | {meta['title']}"
+    return combined if len(combined) <= limit else phrase[:limit]
+
+
+def search_tags(meta: dict) -> list:
+    """The search phrase as a tag, without the question mark."""
+    phrase = search_phrase(meta)
+    return [phrase.rstrip("?").lower()] if phrase else []
 
 
 def promo_url(meta: dict):
@@ -59,8 +70,9 @@ def main(video_dir: str):
     title = f"{short_title(meta)} {SHORTS_HASHTAGS}"
     link = promo_url(meta)
     promo = f"▶ Full video: {meta['promotesTitle']}\n{link}\n\n" if link else ""
-    description = f"{promo}{meta['description']}\n\n{SHORTS_HASHTAGS}"
-    tags = meta.get("tags", []) + ["shorts", "short"]
+    query_line = f"{meta['youtubeQuery']}\n\n" if meta.get("youtubeQuery") and not meta.get("promotesTitle") else ""
+    description = f"{query_line}{promo}{meta['description']}\n\n{SHORTS_HASHTAGS}"
+    tags = search_tags(meta) + meta.get("tags", []) + ["shorts", "short"]
 
     video_id = upload_video(
         reel,
