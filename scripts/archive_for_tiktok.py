@@ -30,7 +30,7 @@ from botocore.exceptions import ClientError
 from tiktok_captions import build_caption
 
 MANIFEST_KEY = "tiktok/manifest.json"
-MAX_ENTRIES = 60
+MAX_ENTRIES = 80
 LEGACY_SEQ_BASE = -100000  # entries from before `seq` existed keep their list order, ahead of new ones
 REQUIRED_ENV = ("R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_ENDPOINT", "R2_BUCKET", "R2_PUBLIC_URL")
 
@@ -117,11 +117,19 @@ def main(video_dir: str, seq: int = None):
     else:
         entry["seq"] = seq if seq is not None else next_seq(existing)
         entries = [entry] + existing
-    for old in entries[MAX_ENTRIES:]:
-        s3.delete_object(Bucket=bucket, Key=f"tiktok/{old['slug']}.mp4")
-        print(f"Removed old archive {old['slug']}")
-    save_manifest(s3, bucket, entries[:MAX_ENTRIES])
-    print(f"Manifest updated ({min(len(entries), MAX_ENTRIES)} videos)")
+    # Over the limit, drop the videos EARLIEST in posting order (lowest seq: already posted), never
+    # the ones at the bottom of the list: a refresh pushes prepared-but-unposted videos down there,
+    # and trimming by list position once deleted 15 of them.
+    overflow = len(entries) - MAX_ENTRIES
+    if overflow > 0:
+        doomed = sorted(entries, key=lambda e: e["seq"])[:overflow]
+        for old in doomed:
+            s3.delete_object(Bucket=bucket, Key=f"tiktok/{old['slug']}.mp4")
+            print(f"Removed old archive {old['slug']}")
+        gone = {e["slug"] for e in doomed}
+        entries = [e for e in entries if e["slug"] not in gone]
+    save_manifest(s3, bucket, entries)
+    print(f"Manifest updated ({len(entries)} videos)")
 
 
 if __name__ == "__main__":
