@@ -30,7 +30,10 @@ from botocore.exceptions import ClientError
 from tiktok_captions import build_caption
 
 MANIFEST_KEY = "tiktok/manifest.json"
-MAX_ENTRIES = 80
+# Which videos the creator already posted is only known in his browser, so nothing here can tell posted from
+# unposted: trimming has twice deleted videos still to post (Oct 22, Oct 26). Keep the limit well above what
+# can pile up (21 a week); R2 holds 200 x ~4 MB with room to spare.
+MAX_ENTRIES = 200
 LEGACY_SEQ_BASE = -100000  # entries from before `seq` existed keep their list order, ahead of new ones
 REQUIRED_ENV = ("R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_ENDPOINT", "R2_BUCKET", "R2_PUBLIC_URL")
 

@@ -17,6 +17,10 @@ on:
         description: "Re-render videos that are already on the page"
         type: boolean
         default: false
+      slugs:
+        description: "Only these videos (comma separated, e.g. to restore some); empty = next ones in the queue"
+        required: false
+        default: ""
 
 jobs:
   prepare:
@@ -44,4 +48,4 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-        run: python scripts/prepare_tiktok_batch.py "${{ inputs.count || '21' }}" ${{ inputs.refresh && 'refresh' || '' }}
+        run: python scripts/prepare_tiktok_batch.py "${{ inputs.count || '21' }}" ${{ inputs.refresh && 'refresh' || '' }} ${{ inputs.slugs && format('slugs={0}', inputs.slugs) || '' }}

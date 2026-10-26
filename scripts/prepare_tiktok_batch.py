@@ -36,7 +36,7 @@ def render(slug: str):
         subprocess.run([sys.executable, str(SCRIPTS / step), str(video_dir)], check=True)
 
 
-def main(count: int, refresh: bool = False):
+def main(count: int, refresh: bool = False, only: list = None):
     missing = [name for name in REQUIRED_ENV if not os.environ.get(name)]
     if missing or not os.environ.get("PEXELS_API_KEY"):
         raise SystemExit(f"Missing environment: {', '.join(missing) or 'PEXELS_API_KEY'}")
@@ -45,7 +45,10 @@ def main(count: int, refresh: bool = False):
     manifest = with_seq(load_manifest(r2_client(), os.environ["R2_BUCKET"]))
     already = {e["slug"] for e in manifest}
     first_seq = next_seq(manifest)
-    todo = [s for s in queue if refresh or s not in already][:count]
+    if only:  # explicit slugs (e.g. to restore videos), whether or not they are still in the queue
+        todo = [s for s in only if (ROOT / "videos" / s / "meta.json").exists() and (refresh or s not in already)]
+    else:
+        todo = [s for s in queue if refresh or s not in already][:count]
     print(f"Preparing {len(todo)} video(s): {', '.join(todo)}")
 
     done, failed = [], []
@@ -67,4 +70,6 @@ def main(count: int, refresh: bool = False):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_COUNT, "refresh" in sys.argv[2:])
+    extra = sys.argv[2:]
+    chosen = next((a.split("=", 1)[1].split(",") for a in extra if a.startswith("slugs=")), None)
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_COUNT, "refresh" in extra, [s for s in chosen if s] if chosen else None)
