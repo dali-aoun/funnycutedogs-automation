@@ -116,6 +116,26 @@ def publish_container(container_id: str) -> str:
     return resp.json()["id"]
 
 
+RECENT_MEDIA_COUNT = 30
+RECHECK_WAIT_SECONDS = 15
+
+
+def already_published(caption: str) -> bool:
+    """True if one of the account's latest posts has exactly this caption (so a retried run, or a
+    publish call that errored but went through, doesn't post the same Reel twice). Fails open."""
+    try:
+        resp = requests.get(
+            f"{GRAPH_API}/{os.environ['IG_BUSINESS_ACCOUNT_ID']}/media",
+            params={"fields": "caption", "limit": RECENT_MEDIA_COUNT, "access_token": os.environ["IG_ACCESS_TOKEN"]},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return any((m.get("caption") or "").strip() == caption.strip() for m in resp.json().get("data", []))
+    except Exception as e:
+        print(f"Could not check recent Instagram posts ({e})")
+        return False
+
+
 def main(video_dir: str):
     video_dir = Path(video_dir)
     reel = video_dir / "reel.mp4"
@@ -124,6 +144,10 @@ def main(video_dir: str):
     if not reel.exists():
         raise SystemExit(f"Missing rendered reel: {reel} (run assemble_reel.py first)")
     meta = json.loads(meta_path.read_text())
+    caption = build_caption(meta)
+    if already_published(caption):
+        print("\nAlready on Instagram, not posting again")
+        return
 
     object_key = f"{video_dir.name}-{int(time.time())}.mp4"
     s3, bucket = upload_to_r2(reel, object_key)
@@ -131,10 +155,17 @@ def main(video_dir: str):
     print(f"Uploaded to {video_url}")
 
     try:
-        container_id = create_container(video_url, build_caption(meta))
+        container_id = create_container(video_url, caption)
         wait_until_ready(container_id)
-        media_id = publish_container(container_id)
-        print(f"\nPublished to Instagram: media id {media_id}")
+        try:
+            media_id = publish_container(container_id)
+            print(f"\nPublished to Instagram: media id {media_id}")
+        except requests.HTTPError as e:
+            # Instagram sometimes answers 500 on media_publish (Oct 22) -- check before treating it as a failure.
+            time.sleep(RECHECK_WAIT_SECONDS)
+            if not already_published(caption):
+                raise
+            print(f"\nInstagram returned an error ({e}) but the Reel is live")
     finally:
         delete_from_r2(s3, bucket, object_key)
         print(f"Deleted temporary object {object_key} from R2")

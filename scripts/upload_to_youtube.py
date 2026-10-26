@@ -9,7 +9,7 @@ import json
 import sys
 from pathlib import Path
 
-from youtube_lib import post_comment, set_thumbnail, upload_video
+from youtube_lib import find_video_id_by_title, post_comment, set_thumbnail, upload_video
 
 PIN_COMMENT_TEXT = (
     "🔗 Full breakdown + the training program I mentioned: link in the description!\n"
@@ -25,6 +25,17 @@ def main(video_dir: str):
     if not final.exists():
         raise SystemExit(f"Missing rendered video: {final}")
     meta = json.loads((video_dir / "meta.json").read_text())
+
+    # A later step of the run can fail after this upload succeeded and the whole run is retried: don't
+    # upload the same video twice (same guard as the Shorts uploader).
+    try:
+        already = find_video_id_by_title(meta["title"])
+    except Exception as e:
+        print(f"Could not check for an existing upload ({e}); uploading")
+        already = None
+    if already:
+        print(f"\nAlready on YouTube, not uploading again: https://youtube.com/watch?v={already}")
+        return
 
     video_id = upload_video(
         final,

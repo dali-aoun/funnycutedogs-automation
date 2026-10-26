@@ -45,6 +45,15 @@ def search_tags(meta: dict) -> list:
     return [phrase.rstrip("?").lower()] if phrase else []
 
 
+def existing_short_id(title: str):
+    """Id of a channel upload with exactly this title, or None (also None if the lookup fails)."""
+    try:
+        return find_video_id_by_title(title)
+    except Exception as e:
+        print(f"Could not check for an existing upload ({e}); uploading")
+        return None
+
+
 def promo_url(meta: dict):
     """Link to the long-form this Short advertises, if it is already published.
     YouTube lets Shorts descriptions and comments link to other YouTube videos."""
@@ -68,6 +77,12 @@ def main(video_dir: str):
     meta = json.loads((video_dir / "meta.json").read_text())
 
     title = f"{short_title(meta)} {SHORTS_HASHTAGS}"
+    # A later step (Instagram) can fail after this one succeeded, and the whole run is then retried:
+    # without this check the same Short was uploaded to YouTube twice (Oct 22-23).
+    already = existing_short_id(title)
+    if already:
+        print(f"\nAlready on YouTube, not uploading again: https://youtube.com/shorts/{already}")
+        return
     link = promo_url(meta)
     promo = f"▶ Full video: {meta['promotesTitle']}\n{link}\n\n" if link else ""
     query_line = f"{meta['youtubeQuery']}\n\n" if meta.get("youtubeQuery") and not meta.get("promotesTitle") else ""
