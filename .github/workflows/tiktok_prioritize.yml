@@ -1,0 +1,32 @@
+name: TikTok page - move videos to the top
+
+# Puts the given videos first in the "À faire" list of funnycutedogs.com/tiktok/ (no re-render).
+on:
+  workflow_dispatch:
+    inputs:
+      slugs:
+        description: "Comma-separated video slugs, in the order to post them"
+        required: true
+
+jobs:
+  prioritize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Move to the top
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+        run: python scripts/prioritize_tiktok.py "${{ inputs.slugs }}"
