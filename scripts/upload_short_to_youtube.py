@@ -95,6 +95,7 @@ def main(video_dir: str):
         description,
         tags,
         meta.get("privacyStatus", "public"),
+        synthetic=bool(meta.get("aiGenerated")),
     )
     print(f"\nShort upload complete: https://youtube.com/shorts/{video_id}")
 

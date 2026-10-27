@@ -16,6 +16,7 @@ import json
 import os
 import random
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -134,6 +135,19 @@ def main(video_dir: str):
     video_dir = Path(video_dir)
     clips_dir = video_dir / "clips"
     meta = json.loads((video_dir / "meta.json").read_text())
+
+    # The creator's own footage (e.g. AI-generated clips of the recurring dog) lives in own_clips/, because
+    # clips/ is git-ignored and CI only sees what is committed. It always wins over stock footage.
+    own = sorted((video_dir / "own_clips").glob("*.mp4"))
+    if own:
+        clips_dir.mkdir(parents=True, exist_ok=True)
+        for i, source in enumerate(own, start=1):
+            shutil.copy(source, clips_dir / f"{i:02d}.mp4")
+        print(f"Using {len(own)} own clip(s) from {video_dir / 'own_clips'}")
+        return
+    if meta.get("ownClips"):
+        # Never fall back to stock footage for a video that is meant to show the creator's own dog.
+        raise SystemExit(f"meta.json says ownClips but {video_dir / 'own_clips'} has no .mp4")
 
     if any(clips_dir.glob("*.mp4")):
         print(f"Clips already present in {clips_dir}, skipping fetch")

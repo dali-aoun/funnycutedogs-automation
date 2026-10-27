@@ -60,6 +60,9 @@ def build_caption(meta: dict) -> str:
         f"▶ Full video on YouTube: {promo} (link in bio)"
         if promo else "🐾 Full video + more on the link in bio!"
     )
+    if meta.get("aiGenerated"):
+        pointer = f"{pointer}\n\n🤖 AI-generated video"
+        hashtags = f"{hashtags} #aigenerated".strip()
     parts = [
         meta["title"],
         "",

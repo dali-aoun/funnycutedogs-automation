@@ -39,6 +39,9 @@ def build_caption(meta: dict) -> dict:
         f"▶ Full video on YouTube: {promo} (funny & cute dogs)"
         if promo else "Follow for daily dog clips \U0001F436"
     )
+    if meta.get("aiGenerated"):  # disclosure; the TikTok "AI-generated content" switch is ticked by hand at upload
+        hashtags = hashtags + ["#aigenerated"]
+        closing = f"{closing}\n\n\U0001F916 AI-generated video"
     caption = f"{title} \U0001F43E\n\n{one_liner}\n\n{closing}\n\n{' '.join(hashtags)}"
     return {
         "title": title,

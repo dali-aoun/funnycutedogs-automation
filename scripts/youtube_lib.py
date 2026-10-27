@@ -33,32 +33,46 @@ def get_credentials() -> Credentials:
     )
 
 
-def upload_video(video_path: Path, title: str, description: str, tags: list, privacy_status: str) -> str:
+def upload_video(video_path: Path, title: str, description: str, tags: list, privacy_status: str,
+                 synthetic: bool = False) -> str:
+    """`synthetic` sets YouTube's "altered or synthetic content" disclosure (status.containsSyntheticMedia),
+    required for realistic AI-generated footage. If the API ever rejects that field, retry without it
+    rather than losing the upload (the label can then be ticked by hand in Studio)."""
     youtube = build("youtube", "v3", credentials=get_credentials())
 
-    body = {
-        "snippet": {
-            "title": title,
-            "description": description,
-            "tags": tags,
-            "categoryId": PETS_AND_ANIMALS_CATEGORY_ID,
-        },
-        "status": {
-            "privacyStatus": privacy_status,
-            "selfDeclaredMadeForKids": False,
-        },
-    }
+    def attempt(with_label: bool) -> str:
+        body = {
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": tags,
+                "categoryId": PETS_AND_ANIMALS_CATEGORY_ID,
+            },
+            "status": {
+                "privacyStatus": privacy_status,
+                "selfDeclaredMadeForKids": False,
+            },
+        }
+        if with_label:
+            body["status"]["containsSyntheticMedia"] = True
 
-    media = MediaFileUpload(str(video_path), chunksize=-1, resumable=True, mimetype="video/mp4")
-    request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+        media = MediaFileUpload(str(video_path), chunksize=-1, resumable=True, mimetype="video/mp4")
+        request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
 
-    response = None
-    while response is None:
-        status, response = request.next_chunk()
-        if status:
-            print(f"Uploaded {int(status.progress() * 100)}%")
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                print(f"Uploaded {int(status.progress() * 100)}%")
+        return response["id"]
 
-    return response["id"]
+    if not synthetic:
+        return attempt(False)
+    try:
+        return attempt(True)
+    except Exception as e:
+        print(f"Upload with the AI label failed ({e}); retrying without it. TICK 'altered content' IN STUDIO.")
+        return attempt(False)
 
 
 def set_thumbnail(video_id: str, thumbnail_path: Path):
