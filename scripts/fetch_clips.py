@@ -134,7 +134,7 @@ def choose_clips(slug: str, keywords: list, num_clips: int, results_for, blocked
 def main(video_dir: str):
     video_dir = Path(video_dir)
     clips_dir = video_dir / "clips"
-    meta = json.loads((video_dir / "meta.json").read_text())
+    meta = json.loads((video_dir / "meta.json").read_text(encoding="utf-8"))
 
     # The creator's own footage (e.g. AI-generated clips of the recurring dog) lives in own_clips/, because
     # clips/ is git-ignored and CI only sees what is committed. It always wins over stock footage.

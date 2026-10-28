@@ -146,7 +146,7 @@ def main(video_dir: str):
 
     if not reel.exists():
         raise SystemExit(f"Missing rendered reel: {reel} (run assemble_reel.py first)")
-    meta = json.loads(meta_path.read_text())
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
     caption = build_caption(meta)
     if already_published(caption):
         print("\nAlready on Instagram, not posting again")

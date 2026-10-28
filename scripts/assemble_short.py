@@ -46,6 +46,10 @@ HOOK_MAX_LINES = 3
 HOOK_FONT_SIZE = 76
 HOOK_LINE_HEIGHT = 96
 HOOK_START_Y = 460
+# The creator's own (AI) clips are close-ups of one dog filling the frame, and the stock-style hook position
+# covers its muzzle, so the hook goes near the top; natural clip sounds stay audible under the voice.
+OWN_CLIP_HOOK_START_Y = 190
+OWN_CLIP_AUDIO_VOLUME = 0.55
 
 # Shorts are ads for the long-form videos: a Short that promotes one says so;
 # the others promise a daily video (the "series" test, replaces FOLLOW FOR MORE).
@@ -92,6 +96,15 @@ def wrap_text(text, max_chars_per_line, max_lines):
     if current:
         lines.append(current)
     return lines[:max_lines]
+
+
+def has_audio(path: Path) -> bool:
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=codec_type",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+        capture_output=True, text=True,
+    )
+    return bool(out.stdout.strip())
 
 
 def probe_duration(path: Path) -> float:
@@ -156,12 +169,12 @@ def escape_fontfile(font_path):
     return font_path.replace(":", "\\:")
 
 
-def build_hook_filters(hook_text, font_path):
+def build_hook_filters(hook_text, font_path, start_y=HOOK_START_Y):
     font_path = escape_fontfile(font_path)
     lines = wrap_text(hook_text, HOOK_MAX_CHARS_PER_LINE, HOOK_MAX_LINES)
     filters = []
     for i, line in enumerate(lines):
-        y = HOOK_START_Y + i * HOOK_LINE_HEIGHT
+        y = start_y + i * HOOK_LINE_HEIGHT
         filters.append(
             f"drawtext=fontfile='{font_path}':text='{escape_drawtext(line)}':"
             f"fontsize={HOOK_FONT_SIZE}:fontcolor=white:borderw=6:bordercolor=black:"
@@ -195,7 +208,7 @@ def main(video_dir: str):
     clips_dir = video_dir / "clips"
     narration = video_dir / "narration.mp3"
     reel = video_dir / "reel.mp4"
-    meta = json.loads((video_dir / "meta.json").read_text())
+    meta = json.loads((video_dir / "meta.json").read_text(encoding="utf-8"))
 
     clips = sorted(clips_dir.glob("*.mp4"))
     if not clips:
@@ -226,6 +239,13 @@ def main(video_dir: str):
     # apad keeps the audio track running to the end so the explicit -t below
     # (not stream lengths) decides where the video stops.
     audio_filter = f"[{narration_idx}:a]volume=1.0,apad[a]"
+    own_audio = [i for i, c in enumerate(clips) if meta.get("ownClips") and has_audio(c)]
+    if len(own_audio) == 1:  # a single own clip: keep its natural sound (doorbell, rain...) under the voice
+        audio_filter = (
+            f"[{own_audio[0]}:a]volume={OWN_CLIP_AUDIO_VOLUME}[ca];"
+            f"[{narration_idx}:a]volume=1.0[na];"
+            f"[ca][na]amix=inputs=2:duration=longest:normalize=0,apad[a]"
+        )
     full_filter = f"{per_clip_filters};{concat_filter};{audio_filter}"
 
     video_label = "vconcat"
@@ -235,7 +255,8 @@ def main(video_dir: str):
 
     hook_text = meta.get("hookText")
     if hook_text and font_path:
-        for filt in build_hook_filters(hook_text, font_path):
+        hook_y = OWN_CLIP_HOOK_START_Y if meta.get("ownClips") else HOOK_START_Y
+        for filt in build_hook_filters(hook_text, font_path, hook_y):
             out = f"vhook{len(chain)}"
             chain.append(f"[{prev}]{filt}[{out}]")
             prev = out

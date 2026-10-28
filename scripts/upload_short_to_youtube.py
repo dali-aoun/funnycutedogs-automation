@@ -74,7 +74,7 @@ def main(video_dir: str):
 
     if not reel.exists():
         raise SystemExit(f"Missing rendered short: {reel} (run assemble_reel.py first)")
-    meta = json.loads((video_dir / "meta.json").read_text())
+    meta = json.loads((video_dir / "meta.json").read_text(encoding="utf-8"))
 
     title = f"{short_title(meta)} {SHORTS_HASHTAGS}"
     # A later step (Instagram) can fail after this one succeeded, and the whole run is then retried:

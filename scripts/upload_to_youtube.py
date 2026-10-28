@@ -24,7 +24,7 @@ def main(video_dir: str):
 
     if not final.exists():
         raise SystemExit(f"Missing rendered video: {final}")
-    meta = json.loads((video_dir / "meta.json").read_text())
+    meta = json.loads((video_dir / "meta.json").read_text(encoding="utf-8"))
 
     # A later step of the run can fail after this upload succeeded and the whole run is retried: don't
     # upload the same video twice (same guard as the Shorts uploader).

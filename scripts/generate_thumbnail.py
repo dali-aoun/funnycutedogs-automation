@@ -63,7 +63,7 @@ def main(video_dir: str):
 
     if not final.exists():
         raise SystemExit(f"Missing rendered video: {final}")
-    meta = json.loads((video_dir / "meta.json").read_text())
+    meta = json.loads((video_dir / "meta.json").read_text(encoding="utf-8"))
     title = meta.get("thumbnailText", meta["title"]).upper()
 
     run(["ffmpeg", "-y", "-ss", FRAME_TIME, "-i", str(final), "-vframes", "1", "-q:v", "2", str(frame)])

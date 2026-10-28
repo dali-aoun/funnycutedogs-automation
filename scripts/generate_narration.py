@@ -46,7 +46,7 @@ def main(video_dir: str):
         print(f"{narration} already present, skipping generation")
         return
 
-    meta = json.loads((video_dir / "meta.json").read_text())
+    meta = json.loads((video_dir / "meta.json").read_text(encoding="utf-8"))
     script = meta.get("script")
     if not script:
         raise SystemExit('meta.json is missing a "script" field for narration')
