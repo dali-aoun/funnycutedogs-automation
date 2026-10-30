@@ -24,6 +24,7 @@ TARGET_WIDTH = 1920
 TARGET_HEIGHT = 1080
 TARGET_FPS = 30
 MIN_DURATION_SECONDS = 60
+PAD_TARGET_SECONDS = MIN_DURATION_SECONDS + 1.5
 
 
 def run(cmd):
@@ -93,14 +94,18 @@ def main(video_dir: str):
         video_filter = f"{per_clip_filters};{concat_filter}"
         video_map = "[vconcat]"
 
+    # A narration that ends a few seconds short of the minimum (a 175-word script is ~57 s of voice) used to
+    # fail the whole run and block the long-form queue. Pad the audio with silence up to PAD_TARGET_SECONDS:
+    # the clips run longer than the voice, so the video simply carries on for those last seconds.
+    pad = f"apad=whole_dur={PAD_TARGET_SECONDS}"
     if has_music:
         audio_filter = (
             f"[{narration_idx}:a]volume=1.0[narr];"
             f"[{music_idx}:a]volume=0.15[bg];"
-            f"[narr][bg]amix=inputs=2:duration=first[a]"
+            f"[narr][bg]amix=inputs=2:duration=first,{pad}[a]"
         )
     else:
-        audio_filter = f"[{narration_idx}:a]volume=1.0[a]"
+        audio_filter = f"[{narration_idx}:a]volume=1.0,{pad}[a]"
 
     full_filter = f"{video_filter};{audio_filter}"
 
