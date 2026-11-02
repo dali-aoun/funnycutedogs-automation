@@ -2,11 +2,13 @@ short-train-five-basics
 short-rex-treat
 short-owner-leaves-for-work
 short-train-name-first
+short-rex-shadow
 short-rex-bath
 short-q-dog-roll-smelly
 short-sunglasses-confidence
 short-leash-tight-stop
 short-q-dog-love-humans
+short-rex-sunbeam
 short-saw-the-rain-changed-mind
 short-leash-pulling-works
 short-q-dog-sit-on-top
