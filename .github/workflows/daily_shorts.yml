@@ -1,7 +1,12 @@
 name: Daily shorts publish
 
+# 2026-11-17: cut from twice a day to once a day (the 09:00 UTC slot; its run lands ~14:00 UTC).
+# Two Shorts a day produced ~190 views per 28 days across the whole channel, and YouTube limits
+# monetization for repetitive mass-produced content, so fewer, validated topics now. To go back,
+# add a second cron line "0 15 * * *".
+
 # Auto-publishes the next queued short (videos/shorts_queue.txt, one slug
-# per line, consumed top to bottom) twice a day. This runs independently of
+# per line, consumed top to bottom) once a day (see note above). This runs independently of
 # the long-form Tue/Thu/Sun schedule (scheduled_publish.yml) to maximize
 # reach/watch-time velocity for YouTube Shorts + Instagram Reels. Two
 # posts/day doubles the number of algorithmic "impression tests" the
@@ -21,7 +26,6 @@ name: Daily shorts publish
 on:
   schedule:
     - cron: "0 9 * * *"
-    - cron: "0 15 * * *"
   workflow_dispatch: {}
 
 permissions:

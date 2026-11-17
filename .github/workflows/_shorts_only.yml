@@ -24,6 +24,9 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Check metadata
+        run: python scripts/check_meta.py "videos/${{ inputs.video_slug }}" --kind short
+
       - name: Fetch stock clips (Pexels)
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
