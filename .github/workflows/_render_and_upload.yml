@@ -37,6 +37,8 @@ jobs:
         run: python scripts/fetch_clips.py "videos/${{ inputs.video_slug }}"
 
       - name: Generate narration
+        env:
+          TTS_ENGINE: kokoro
         run: python scripts/generate_narration.py "videos/${{ inputs.video_slug }}"
 
       - name: Assemble video

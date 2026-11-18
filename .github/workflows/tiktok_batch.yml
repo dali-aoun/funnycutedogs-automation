@@ -48,4 +48,5 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          TTS_ENGINE: kokoro
         run: python scripts/prepare_tiktok_batch.py "${{ inputs.count || '21' }}" ${{ inputs.refresh && 'refresh' || '' }} ${{ inputs.slugs && format('slugs={0}', inputs.slugs) || '' }}
