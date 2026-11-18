@@ -1,0 +1,40 @@
+name: Kokoro narration test
+
+# Manual only. Generates a narration with Kokoro for one slug and keeps the mp3 as a build artifact.
+# Nothing is published and nothing is committed.
+on:
+  workflow_dispatch:
+    inputs:
+      video_slug:
+        required: true
+        type: string
+        default: how-to-stop-dog-barking
+
+jobs:
+  narrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt kokoro-onnx==0.4.7 soundfile
+
+      - name: Generate narration with Kokoro
+        env:
+          TTS_ENGINE: kokoro
+        run: |
+          rm -f "videos/${{ inputs.video_slug }}/narration.mp3"
+          time python scripts/generate_narration.py "videos/${{ inputs.video_slug }}"
+          ffprobe -v error -show_entries format=duration -of csv=p=0 "videos/${{ inputs.video_slug }}/narration.mp3"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kokoro-narration
+          path: videos/${{ inputs.video_slug }}/narration.mp3
